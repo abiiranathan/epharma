@@ -1,13 +1,28 @@
 #include "epharma.hpp"
+#include <chrono>
 #include <iostream>
 #include <stdexcept>
 #include <vector>
 
-// static const std::string databaseName = "epharma.db";
 static std::string databaseName = ":memory:";
 
-void set_database_file(const std::string& file) {
-    databaseName = file;
+void setDatabase(const std::string& dbname) {
+    databaseName = dbname;
+}
+
+int compute_days_to_expiry(const std::string& expiry_date, const date& now) {
+    if (!validate_expiry_date(expiry_date)) {
+        return -1;
+    }
+
+    using seconds = std::chrono::seconds;
+    using system_clock = std::chrono::system_clock;
+
+    date d = dateFromString(expiry_date);            // convert string to a date
+    date today = dateFromString(dateToString(now));  // truncate properly for cmp
+
+    auto duration = std::chrono::duration_cast<seconds>(d - today).count();
+    return duration / (60 * 60 * 24);
 }
 
 std::string dateTimeToString(date_time time) {

@@ -1,6 +1,6 @@
 # epharma
 
-Electronic pharmacy management software for pharmacies and drugstores.
+Electronic pharmacy management software for pharmacies and drug stores.
 
 ## Features
 

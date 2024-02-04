@@ -2,6 +2,7 @@
 #define EPHARMA_H
 
 // epharma.hpp
+#include <bits/chrono.h>
 #include <sqlite3.h>
 
 // Define models for the library
@@ -33,7 +34,14 @@ date dateFromString(const std::string& s);
 // Validate expiry date format
 bool validate_expiry_date(const std::string& date);
 
-void set_database_file(const std::string& file);
+// compute days to expire or since expiry
+// If days are positive, the items is not yet expired.
+// if negative, it's already expired or expiry date was not set.
+// If the expiry date if not valid, this function will return -1.
+int compute_days_to_expiry(const std::string& expiry_date,
+                           const date& now = std::chrono::system_clock::now());
+
+void setDatabase(const std::string& file);
 
 // Define the format for the date_time that can be used by
 // QDateTime::fromString and QDateTime::toString
