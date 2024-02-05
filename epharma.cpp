@@ -187,6 +187,18 @@ void Epharma::create_tables() {
         "ORDER BY sale_date DESC;";
 
     execute(createSalesReportView);
+
+    // Trigger to make sure we don't sell more than whats in stock
+    std::string quantityTrigger =
+        "CREATE TRIGGER IF NOT EXISTS validate_quantity "
+        "BEFORE INSERT ON sales_items "
+        "FOR EACH ROW "
+        "WHEN (NEW.quantity > (SELECT quantity FROM inventory_items WHERE id = NEW.item_id)) "
+        "BEGIN "
+        "    SELECT RAISE(ABORT, 'Insufficient quantity for item'); "
+        "END;";
+
+    execute(quantityTrigger);
 }
 
 long long Epharma::execute(const std::string& sql) {

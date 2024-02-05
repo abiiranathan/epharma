@@ -1,5 +1,8 @@
 #include "epharma.hpp"
 #include <gtest/gtest.h>
+#include <cstddef>
+#include <exception>
+#include <stdexcept>
 #include <vector>
 
 TEST(DateTimeTest, Conversion) {
@@ -223,6 +226,32 @@ TEST(EpharmaTest, TestReceiptTotal) {
 
     double expectedReceiptTotal = eph.get_receipt_total(items);
     ASSERT_EQ(expectedReceiptTotal, 9145);
+}
+
+TEST(EpharmaTest, CantMakeSalesIfOutOfStock) {
+    std::vector<epharma::InventoryItem> inventory_items = {
+        {1, "Paracetamol", "GSK", 100, 10.0, 15.0},
+        {2, "Ibuprofen", "GSK", 100, 10.0, 15.0},
+    };
+
+    epharma::Epharma eph;
+    epharma::setDatabase(":memory:");
+
+    eph.insert_inventory_items(inventory_items);
+    std::vector<epharma::SalesItem> items = {
+        {1, 1, "Paracetamol", 200, 10.0, 500.0},
+        {2, 2, "Ibuprofen", 150, 10.0, 15.0},
+    };
+
+    // Should fail, we are selling more than what we have in stock.
+    ASSERT_THROW(eph.create_sales_items(items), std::runtime_error);
+    try {
+        eph.create_sales_items(items);
+    } catch (std::exception& e) {
+        std::string error(e.what());
+        size_t index = error.find("Insufficient quantity for item");
+        ASSERT_NE(index, -1);
+    }
 }
 
 // test search
