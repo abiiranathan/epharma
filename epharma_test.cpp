@@ -201,6 +201,30 @@ TEST(EpharmaTest, TestTotalProfit) {
     ASSERT_EQ(item.total_profit(), 500.0);
 }
 
+TEST(EpharmaTest, TestReceiptTotal) {
+    epharma::Epharma eph;
+    epharma::setDatabase(":memory:");
+
+    std::vector<epharma::InventoryItem> inventory_items = {
+        {1, "Paracetamol", "GSK", 100, 10.0, 15.0},  {2, "Amoxicillin", "GSK", 100, 10.0, 15.0},
+        {3, "Ibuprofen", "GSK", 100, 10.0, 15.0},    {4, "Ciprofloxacin", "GSK", 100, 10.0, 15.0},
+        {5, "Azithromycin", "GSK", 100, 10.0, 15.0},
+    };
+
+    eph.insert_inventory_items(inventory_items);
+
+    std::vector<epharma::SalesItem> items = {
+        {1, 1, "Paracetamol", 5, 10.0, 500.0},  {2, 2, "Amoxicillin", 3, 10.0, 1000.0},
+        {3, 3, "Ibuprofen", 2, 10.0, 15.0},     {4, 4, "Ciprofloxacin", 1, 10.0, 15.0},
+        {5, 5, "Azithromycin", 8, 10.0, 450.0},
+    };
+
+    eph.create_sales_items(items);
+
+    double expectedReceiptTotal = eph.get_receipt_total(items);
+    ASSERT_EQ(expectedReceiptTotal, 9145);
+}
+
 // test search
 TEST(EpharmaTest, TestSearchInventoryItems) {
     epharma::Epharma epharma;

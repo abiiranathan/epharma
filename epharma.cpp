@@ -602,6 +602,14 @@ std::vector<SalesItem> Epharma::search_sales_items(const std::string& name) {
     return items;
 }
 
+double Epharma::get_receipt_total(SaleItems items) {
+    double total = 0.0;
+    for (auto& sale : items) {
+        total += sale.quantity * sale.selling_price;
+    }
+    return total;
+}
+
 // create a new user
 long long Epharma::create_user(const User& user) {
     // use a prepared statement to insert the user

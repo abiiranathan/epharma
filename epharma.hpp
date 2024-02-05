@@ -74,6 +74,9 @@ struct InventoryItem {
     friend std::ostream& operator<<(std::ostream& os, const InventoryItem& item);
 };
 
+// A vector of inventory items
+typedef std::vector<InventoryItem> InventoryItems;
+
 struct SalesItem {
     static const std::string TABLE_NAME;
 
@@ -97,6 +100,9 @@ struct SalesItem {
     // overload the << operator for SalesItem
     friend std::ostream& operator<<(std::ostream& os, const SalesItem& item);
 };
+
+// A vector of SaleItems
+typedef std::vector<SalesItem> SaleItems;
 
 struct User {
     static const std::string TABLE_NAME;
@@ -199,6 +205,9 @@ class Epharma {
 
     // get a single sales item
     SalesItem get_sales_item(int id) noexcept(false);
+
+    // Get receipt total
+    double get_receipt_total(SaleItems items);
 
     // ================= USERS ======================================
 
