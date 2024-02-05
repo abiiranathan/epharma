@@ -6,17 +6,22 @@
 
 static std::string databaseName = ":memory:";
 
+// Epharma namespace
+namespace epharma {
+
 void setDatabase(const std::string& dbname) {
     databaseName = dbname;
 }
 
+const std::string getDatabaseName() {
+    return databaseName;
+}
+
 int compute_days_to_expiry(const std::string& expiry_date, const date& now) {
-    if (!validate_expiry_date(expiry_date)) {
+    if (!epharma::validate_expiry_date(expiry_date)) {
         return -1;
     }
-
     using seconds = std::chrono::seconds;
-    using system_clock = std::chrono::system_clock;
 
     date d = dateFromString(expiry_date);            // convert string to a date
     date today = dateFromString(dateToString(now));  // truncate properly for cmp
@@ -320,7 +325,7 @@ static void scanInventoryItem(InventoryItem& item, sqlite3_stmt* stmt) {
 
     std::string created_at =
         std::string(reinterpret_cast<const char*>(sqlite3_column_text(stmt, 7)));
-    item.created_at = dateTimeFromString(created_at);
+    item.created_at = epharma::dateTimeFromString(created_at);
 
     const unsigned char* barcode = sqlite3_column_text(stmt, 8);
     if (barcode != nullptr) {
@@ -750,7 +755,7 @@ std::ostream& operator<<(std::ostream& os, const InventoryItem& item) {
     os << "ID: " << item.id << ", Name: " << item.name << ", Brand: " << item.brand
        << ", Quantity: " << item.quantity << ", Cost Price: " << item.cost_price
        << ", Selling Price: " << item.selling_price << ", Expiry Date: " << item.expiry_date
-       << ", Created At: " << dateTimeToString(item.created_at);
+       << ", Created At: " << epharma::dateTimeToString(item.created_at);
     return os;
 }
 
@@ -759,14 +764,14 @@ std::ostream& operator<<(std::ostream& os, const SalesItem& item) {
     os << "ID: " << item.id << ", Item ID: " << item.item_id << ", Item Name: " << item.item_name
        << ", Quantity: " << item.quantity << ", Cost Price: " << item.cost_price
        << ", Selling Price: " << item.selling_price
-       << ", Created At: " << dateTimeToString(item.created_at);
+       << ", Created At: " << epharma::dateTimeToString(item.created_at);
     return os;
 }
 
 // overload the << operator for User
 std::ostream& operator<<(std::ostream& os, const User& user) {
     os << "ID: " << user.id << ", Username: " << user.username
-       << ", Created At: " << dateTimeToString(user.created_at);
+       << ", Created At: " << epharma::dateTimeToString(user.created_at);
     return os;
 }
 
@@ -845,7 +850,7 @@ static void scanStockIn(StockIn& stockin, sqlite3_stmt* stmt) {
     stockin.invoice_no = std::string(reinterpret_cast<const char*>(sqlite3_column_text(stmt, 3)));
     stockin.batch_no = std::string(reinterpret_cast<const char*>(sqlite3_column_text(stmt, 4)));
     stockin.expiry_date = std::string(reinterpret_cast<const char*>(sqlite3_column_text(stmt, 5)));
-    stockin.created_at = dateTimeFromString(
+    stockin.created_at = epharma::dateTimeFromString(
         std::string(reinterpret_cast<const char*>(sqlite3_column_text(stmt, 6))));
 }
 
@@ -1021,3 +1026,4 @@ std::vector<SalesReport> Epharma::get_sales_report(const std::string& start_date
     sqlite3_finalize(stmt);
     return salesReports;
 }
+}  // namespace epharma

@@ -1,11 +1,7 @@
 #ifndef EPHARMA_H
 #define EPHARMA_H
 
-// epharma.hpp
-#include <bits/chrono.h>
 #include <sqlite3.h>
-
-// Define models for the library
 #include <chrono>
 #include <ctime>
 #include <iomanip>
@@ -13,6 +9,7 @@
 #include <string>
 #include <vector>
 
+namespace epharma {
 // Define the date_time type
 using date_time = std::chrono::system_clock::time_point;
 
@@ -41,7 +38,12 @@ bool validate_expiry_date(const std::string& date);
 int compute_days_to_expiry(const std::string& expiry_date,
                            const date& now = std::chrono::system_clock::now());
 
+// Sets the sqlite3 database name
 void setDatabase(const std::string& file);
+
+// Returns the configured database name
+// default is ":memory:"
+const std::string getDatabaseName();
 
 // Define the format for the date_time that can be used by
 // QDateTime::fromString and QDateTime::toString
@@ -52,18 +54,21 @@ const std::string QDATETIME_FORMAT = "yyyy-MM-dd HH:mm:ss";
 const std::string QDATE_FORMAT = "yyyy-MM-dd";
 
 struct InventoryItem {
-    static const std::string TABLE_NAME;
+    static const std::string TABLE_NAME;  // table name, set by the application
 
-    int id;
-    std::string name;
-    std::string brand;
-    int quantity;
-    double cost_price;
-    double selling_price;
+    int id;                   // Primary key.
+    std::string name;         // Generic name. (name, brand) must be unique
+    std::string brand;        // Brand name.
+    int quantity;             // Quantity in stock
+    double cost_price;        // Cost price
+    double selling_price;     // Selling price
+    std::string expiry_date;  // Format: YYYY-MM-DD
+    date_time created_at;     // Auto-created by the database
+    std::string barcode;      // unique barcode
 
-    std::string expiry_date;
-    date_time created_at;
-    std::string barcode;  // unique barcode(12 digits)
+    // Returns true if item's expiry date is before today or to today.
+    // It will also return true if expiry date is not a valid date.
+    bool is_expired() { return compute_days_to_expiry(expiry_date) <= 0; }
 
     // overload the << operator for InventoryItem
     friend std::ostream& operator<<(std::ostream& os, const InventoryItem& item);
@@ -256,5 +261,5 @@ class Epharma {
                                               const std::string& item_name = "",
                                               const std::string& item_brand = "") noexcept(false);
 };
-
+}  // namespace epharma
 #endif /* EPHARMA_H */
