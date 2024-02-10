@@ -4,19 +4,8 @@
 #include <stdexcept>
 #include <vector>
 
-static std::string databaseName = ":memory:";
-
 // Epharma namespace
 namespace epharma {
-
-void setDatabase(const std::string& dbname) {
-    databaseName = dbname;
-}
-
-const std::string getDatabaseName() {
-    return databaseName;
-}
-
 int compute_days_to_expiry(const std::string& expiry_date, const date& now) {
     if (!epharma::validate_expiry_date(expiry_date)) {
         return -1;
@@ -87,10 +76,16 @@ bool validate_expiry_date(const std::string& date) {
     return false;
 }
 
-// Epharma
-Epharma::Epharma() {
-    // open the database
-    int rc = sqlite3_open(databaseName.c_str(), &db);
+// Epharma default constructor
+Epharma::Epharma() {}
+
+Epharma::~Epharma() {
+    // close the database
+    sqlite3_close(db);
+}
+
+void Epharma::connect(const std::string& dbname) {
+    int rc = sqlite3_open(dbname.c_str(), &db);
     if (rc) {
         std::cerr << "Error opening SQLite3 database: " << sqlite3_errmsg(db) << std::endl;
         sqlite3_close(db);
@@ -101,15 +96,9 @@ Epharma::Epharma() {
     try {
         create_tables();
     } catch (const std::runtime_error& e) {
-        std::cerr << e.what() << std::endl;
         sqlite3_close(db);
-        exit(1);
+        throw e;
     }
-}
-
-Epharma::~Epharma() {
-    // close the database
-    sqlite3_close(db);
 }
 
 // Initialize the static const members
@@ -202,6 +191,10 @@ void Epharma::create_tables() {
 }
 
 long long Epharma::execute(const std::string& sql) {
+    if (db == nullptr) {
+        throw std::runtime_error("Database not connected");
+    }
+
     char* errMsg;
     int rc = sqlite3_exec(db, sql.c_str(), NULL, 0, &errMsg);
     if (rc != SQLITE_OK) {
@@ -218,6 +211,10 @@ long long Epharma::execute(const std::string& sql) {
 }
 
 long long Epharma::execute_stmt(sqlite3_stmt* stmt) {
+    if (db == nullptr) {
+        throw std::runtime_error("Database not connected");
+    }
+
     int rc = sqlite3_step(stmt);
     if (rc != SQLITE_DONE) {
         std::string error = "Error executing SQL: " + std::string(sqlite3_errmsg(db));

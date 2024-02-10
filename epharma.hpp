@@ -38,13 +38,6 @@ bool validate_expiry_date(const std::string& date);
 int compute_days_to_expiry(const std::string& expiry_date,
                            const date& now = std::chrono::system_clock::now());
 
-// Sets the sqlite3 database name
-void setDatabase(const std::string& file);
-
-// Returns the configured database name
-// default is ":memory:"
-const std::string getDatabaseName();
-
 // Define the format for the date_time that can be used by
 // QDateTime::fromString and QDateTime::toString
 const std::string QDATETIME_FORMAT = "yyyy-MM-dd HH:mm:ss";
@@ -159,6 +152,9 @@ class Epharma {
 
     // destructor
     ~Epharma();
+
+    // connect to the database and create tables if they don't exist
+    void connect(const std::string& db_name) noexcept(false);
 
     // ============= INVENTORY ITEMS ============================
 

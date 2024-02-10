@@ -56,8 +56,8 @@ TEST(COMPUTE_DAYS_TO_EXPIRY, ValidDates) {
 }
 
 TEST(EpharmaTest, TestInsertInventoryItems) {
-    epharma::setDatabase(":memory:");
-    epharma::Epharma epharm;
+    epharma::Epharma epharma;
+    epharma.connect(":memory:");
 
     std::vector<epharma::InventoryItem> items = {
         {1, "Paracetamol", "GSK", 100, 10.0, 15.0, "2022-12-31"},
@@ -67,9 +67,9 @@ TEST(EpharmaTest, TestInsertInventoryItems) {
         {5, "Azithromycin", "GSK", 100, 10.0, 15.0, "2022-12-31"},
     };
 
-    epharm.insert_inventory_items(items);
+    epharma.insert_inventory_items(items);
 
-    auto result = epharm.get_inventory_items();
+    auto result = epharma.get_inventory_items();
     ASSERT_EQ(result.size(), 5);
     ASSERT_EQ(result[0].id, 1);
     ASSERT_EQ(result[1].id, 2);
@@ -80,13 +80,13 @@ TEST(EpharmaTest, TestInsertInventoryItems) {
 }
 
 TEST(EpharmaTest, TestCreateInventoryItem) {
-    epharma::Epharma epharm;
-    epharma::setDatabase(":memory:");
+    epharma::Epharma epharma;
+    epharma.connect(":memory:");
 
-    epharm.create_inventory_item(
+    epharma.create_inventory_item(
         epharma::InventoryItem{6, "Doxycycline", "GSK", 100, 10.0, 15.0, "2022-12-31"});
 
-    auto result = epharm.get_inventory_items();
+    auto result = epharma.get_inventory_items();
     ASSERT_EQ(result.size(), 1);
     ASSERT_GT(result[0].id, 0);
     ASSERT_EQ(result[0].name, "Doxycycline");
@@ -94,7 +94,7 @@ TEST(EpharmaTest, TestCreateInventoryItem) {
 
 TEST(EpharmaTest, TestUpdateInventoryItem) {
     epharma::Epharma epharma;
-    epharma::setDatabase(":memory:");
+    epharma.connect(":memory:");
 
     epharma.create_inventory_item(
         epharma::InventoryItem{6, "Doxycycline", "GSK", 100, 10.0, 15.0, "2022-12-31"});
@@ -113,7 +113,7 @@ TEST(EpharmaTest, TestUpdateInventoryItem) {
 
 TEST(EpharmaTest, TestDeleteInventoryItem) {
     epharma::Epharma epharma;
-    epharma::setDatabase(":memory:");
+    epharma.connect(":memory:");
 
     epharma.create_inventory_item(
         epharma::InventoryItem{6, "Doxycycline", "GSK", 100, 10.0, 15.0, "2022-12-31"});
@@ -126,7 +126,7 @@ TEST(EpharmaTest, TestDeleteInventoryItem) {
 
 TEST(EPharmaTest, UpdateBarcode) {
     epharma::Epharma epharma;
-    epharma::setDatabase(":memory:");
+    epharma.connect(":memory:");
     epharma.create_inventory_item(
         epharma::InventoryItem{1, "Doxycycline", "GSK", 100, 10.0, 15.0, "2022-12-31"});
     epharma.update_barcode(1, "new_barcode");
@@ -137,7 +137,7 @@ TEST(EPharmaTest, UpdateBarcode) {
 
 TEST(EPharmaTest, GetInventoryItemByBarcode) {
     epharma::Epharma epharma;
-    epharma::setDatabase(":memory:");
+    epharma.connect(":memory:");
     epharma.create_inventory_item(
         epharma::InventoryItem{2, "Doxycycline", "GSK", 100, 10.0, 15.0, "2022-12-31"});
 
@@ -149,7 +149,7 @@ TEST(EPharmaTest, GetInventoryItemByBarcode) {
 
 TEST(EpharmaTest, TestInsertSalesItems) {
     epharma::Epharma epharma;
-    epharma::setDatabase(":memory:");
+    epharma.connect(":memory:");
 
     epharma.create_inventory_item(
         epharma::InventoryItem{1, "Doxycycline-1", "GSK-1", 100, 10.0, 15.0, "2022-12-31"});
@@ -175,7 +175,7 @@ TEST(EpharmaTest, TestInsertSalesItems) {
 
 TEST(EpharmaTest, TestCreateSalesItem) {
     epharma::Epharma epharma;
-    epharma::setDatabase(":memory:");
+    epharma.connect(":memory:");
 
     epharma.create_inventory_item(
         epharma::InventoryItem{1, "Doxycycline-1", "GSK-1", 100, 10.0, 15.0, "2022-12-31"});
@@ -205,8 +205,8 @@ TEST(EpharmaTest, TestTotalProfit) {
 }
 
 TEST(EpharmaTest, TestReceiptTotal) {
-    epharma::Epharma eph;
-    epharma::setDatabase(":memory:");
+    epharma::Epharma epharma;
+    epharma.connect(":memory:");
 
     std::vector<epharma::InventoryItem> inventory_items = {
         {1, "Paracetamol", "GSK", 100, 10.0, 15.0},  {2, "Amoxicillin", "GSK", 100, 10.0, 15.0},
@@ -214,7 +214,7 @@ TEST(EpharmaTest, TestReceiptTotal) {
         {5, "Azithromycin", "GSK", 100, 10.0, 15.0},
     };
 
-    eph.insert_inventory_items(inventory_items);
+    epharma.insert_inventory_items(inventory_items);
 
     std::vector<epharma::SalesItem> items = {
         {1, 1, "Paracetamol", 5, 10.0, 500.0},  {2, 2, "Amoxicillin", 3, 10.0, 1000.0},
@@ -222,9 +222,9 @@ TEST(EpharmaTest, TestReceiptTotal) {
         {5, 5, "Azithromycin", 8, 10.0, 450.0},
     };
 
-    eph.create_sales_items(items);
+    epharma.create_sales_items(items);
 
-    double expectedReceiptTotal = eph.get_receipt_total(items);
+    double expectedReceiptTotal = epharma.get_receipt_total(items);
     ASSERT_EQ(expectedReceiptTotal, 9145);
 }
 
@@ -234,19 +234,19 @@ TEST(EpharmaTest, CantMakeSalesIfOutOfStock) {
         {2, "Ibuprofen", "GSK", 100, 10.0, 15.0},
     };
 
-    epharma::Epharma eph;
-    epharma::setDatabase(":memory:");
+    epharma::Epharma epharma;
+    epharma.connect(":memory:");
 
-    eph.insert_inventory_items(inventory_items);
+    epharma.insert_inventory_items(inventory_items);
     std::vector<epharma::SalesItem> items = {
         {1, 1, "Paracetamol", 200, 10.0, 500.0},
         {2, 2, "Ibuprofen", 150, 10.0, 15.0},
     };
 
     // Should fail, we are selling more than what we have in stock.
-    ASSERT_THROW(eph.create_sales_items(items), std::runtime_error);
+    ASSERT_THROW(epharma.create_sales_items(items), std::runtime_error);
     try {
-        eph.create_sales_items(items);
+        epharma.create_sales_items(items);
     } catch (std::exception& e) {
         std::string error(e.what());
         size_t index = error.find("Insufficient quantity for item");
@@ -257,7 +257,7 @@ TEST(EpharmaTest, CantMakeSalesIfOutOfStock) {
 // test search
 TEST(EpharmaTest, TestSearchInventoryItems) {
     epharma::Epharma epharma;
-    epharma::setDatabase(":memory:");
+    epharma.connect(":memory:");
 
     std::vector<epharma::InventoryItem> items = {
         {1, "Paracetamol", "GSK", 100, 10.0, 15.0},  {2, "Amoxicillin", "GSK", 100, 10.0, 15.0},
@@ -274,7 +274,7 @@ TEST(EpharmaTest, TestSearchInventoryItems) {
 
 TEST(EpharmaTest, TestSearchSalesItems) {
     epharma::Epharma epharma;
-    epharma::setDatabase(":memory:");
+    epharma.connect(":memory:");
 
     std::vector<epharma::InventoryItem> inventory_items = {
         {1, "Paracetamol", "GSK", 100, 10.0, 15.0},  {2, "Amoxicillin", "GSK", 100, 10.0, 15.0},
@@ -305,7 +305,7 @@ TEST(EpharmaTest, TestSearchSalesItems) {
 // USER tests
 TEST(EpharmaTest, TestCreateUser) {
     epharma::Epharma epharma;
-    epharma::setDatabase(":memory:");
+    epharma.connect(":memory:");
 
     epharma.create_user(epharma::User{1, "admin", "admin"});
 
@@ -317,7 +317,7 @@ TEST(EpharmaTest, TestCreateUser) {
 
 TEST(EpharmaTest, TestUpdateUser) {
     epharma::Epharma epharma;
-    epharma::setDatabase(":memory:");
+    epharma.connect(":memory:");
 
     epharma.create_user(epharma::User{1, "admin", "admin"});
 
@@ -334,7 +334,7 @@ TEST(EpharmaTest, TestUpdateUser) {
 
 TEST(EpharmaTest, TestDeleteUser) {
     epharma::Epharma epharma;
-    epharma::setDatabase(":memory:");
+    epharma.connect(":memory:");
 
     epharma.create_user(epharma::User{1, "admin", "admin"});
 
@@ -346,7 +346,7 @@ TEST(EpharmaTest, TestDeleteUser) {
 
 TEST(EpharmaTest, TestUserExists) {
     epharma::Epharma epharma;
-    epharma::setDatabase(":memory:");
+    epharma.connect(":memory:");
 
     epharma.create_user(epharma::User{1, "admin", "admin"});
 
@@ -356,7 +356,7 @@ TEST(EpharmaTest, TestUserExists) {
 
 TEST(EpharmaTest, TestAuthenticateUser) {
     epharma::Epharma epharma;
-    epharma::setDatabase(":memory:");
+    epharma.connect(":memory:");
 
     epharma.create_user(epharma::User{1, "admin", "admin"});
 
@@ -366,7 +366,7 @@ TEST(EpharmaTest, TestAuthenticateUser) {
 
 TEST(EpharmaTest, TestCreateStockInItem) {
     epharma::Epharma epharma;
-    epharma::setDatabase(":memory:");
+    epharma.connect(":memory:");
 
     epharma.create_inventory_item(
         epharma::InventoryItem{1, "Doxycycline", "GSK", 100, 10.0, 15.0, "2022-12-31"});
@@ -382,7 +382,7 @@ TEST(EpharmaTest, TestCreateStockInItem) {
 // test search
 TEST(EpharmaTest, TestSearchStockInItems) {
     epharma::Epharma epharma;
-    epharma::setDatabase(":memory:");
+    epharma.connect(":memory:");
 
     epharma.create_inventory_item(
         epharma::InventoryItem{1, "Doxycycline", "GSK", 100, 10.0, 15.0, "2022-12-31"});
@@ -402,7 +402,7 @@ TEST(EpharmaTest, TestSearchStockInItems) {
 
 TEST(EpharmaTest, TestGetStockInItemsByItemId) {
     epharma::Epharma epharma;
-    epharma::setDatabase(":memory:");
+    epharma.connect(":memory:");
 
     epharma.create_inventory_item(
         epharma::InventoryItem{1, "Doxycycline", "GSK", 100, 10.0, 15.0, "2022-12-31"});
@@ -418,7 +418,7 @@ TEST(EpharmaTest, TestGetStockInItemsByItemId) {
 // test multiple stock in items
 TEST(EpharmaTest, TestCreateStockInItems) {
     epharma::Epharma epharma;
-    epharma::setDatabase(":memory:");
+    epharma.connect(":memory:");
 
     epharma.create_inventory_item(
         epharma::InventoryItem{1, "Doxycycline", "GSK", 100, 10.0, 15.0, "2022-12-31"});
@@ -442,7 +442,7 @@ TEST(EpharmaTest, TestCreateStockInItems) {
 
 TEST(EpharmaTest, TestGetStockInItems) {
     epharma::Epharma epharma;
-    epharma::setDatabase(":memory:");
+    epharma.connect(":memory:");
 
     epharma.create_inventory_item(
         epharma::InventoryItem{1, "Doxycycline", "GSK", 100, 10.0, 15.0, "2022-12-31"});
@@ -464,7 +464,7 @@ TEST(EpharmaTest, TestGetStockInItems) {
 // test delete stock in item
 TEST(EpharmaTest, TestDeleteStockInItem) {
     epharma::Epharma epharma;
-    epharma::setDatabase(":memory:");
+    epharma.connect(":memory:");
 
     epharma.create_inventory_item(
         epharma::InventoryItem{1, "Doxycycline", "GSK", 200, 10.0, 15.0, "2022-12-31"});
@@ -480,7 +480,7 @@ TEST(EpharmaTest, TestDeleteStockInItem) {
 // test get_sales_report
 TEST(EpharmaTest, TestGetSalesReport) {
     epharma::Epharma epharma;
-    epharma::setDatabase(":memory:");
+    epharma.connect(":memory:");
 
     epharma.create_inventory_item(
         epharma::InventoryItem{1, "Doxycycline", "GSK", 200, 10.0, 15.0, "2022-12-31"});
