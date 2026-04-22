@@ -1,0 +1,10 @@
+build
+dist
+.env
+node_modules
+*.log
+*.obj
+*.o
+*.so
+*.dll
+*.exe

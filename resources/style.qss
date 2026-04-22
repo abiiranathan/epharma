@@ -1,0 +1,260 @@
+/* ============================================================
+   epharmacy — Light Theme (Simplified)
+   ============================================================ */
+
+/* Main Window & Dialogs */
+QMainWindow {
+    background-color: #f0f4f8;
+}
+
+QDialog {
+    background-color: #ffffff;
+    border-radius: 10px;
+}
+
+QDialog QLabel {
+    background-color: transparent;
+}
+
+
+/* Line Edit, Text Edit, Plain Text Edit */
+QLineEdit,
+QTextEdit,
+QPlainTextEdit {
+    background-color: #ffffff;
+    border: 1px solid #cdd5e0;
+    border-radius: 6px;
+    padding: 6px 10px;
+    color: #1e3a5f;
+    selection-background-color: #bee3f8;
+    selection-color: #1e3a5f;
+    min-height: 30px;
+}
+
+QLineEdit:focus,
+QTextEdit:focus,
+QPlainTextEdit:focus {
+    border: 1.5px solid #3a7bd5;
+    background-color: #fafdff;
+}
+
+QLineEdit:disabled,
+QTextEdit:disabled,
+QPlainTextEdit:disabled {
+    background-color: #edf2f7;
+    color: #a0aec0;
+    border-color: #e2e8f0;
+}
+
+QLineEdit:read-only {
+    background-color: #f7fafc;
+    color: #718096;
+}
+
+/* Combo Box */
+QComboBox {
+    background-color: #ffffff;
+    border: 1px solid #cdd5e0;
+    border-radius: 6px;
+    padding: 5px 10px;
+    color: #1e3a5f;
+    min-height: 30px;
+    selection-background-color: #ebf4ff;
+}
+
+QComboBox:focus {
+    border: 1.5px solid #3a7bd5;
+}
+
+QComboBox:disabled {
+    background-color: #edf2f7;
+    color: #a0aec0;
+}
+
+QComboBox::drop-down {
+    subcontrol-origin: padding;
+    subcontrol-position: top right;
+    width: 28px;
+    border-left: 1px solid #cdd5e0;
+    border-top-right-radius: 6px;
+    border-bottom-right-radius: 6px;
+    background-color: #f7fafc;
+}
+
+QComboBox QAbstractItemView {
+    background-color: #ffffff;
+    border: 1px solid #cdd5e0;
+    border-radius: 6px;
+    selection-background-color: #ebf4ff;
+    selection-color: #1e3a5f;
+    padding: 4px;
+    outline: none;
+}
+
+QComboBox QAbstractItemView::item {
+    min-height: 36px;
+    padding: 4px 10px;
+    border-radius: 4px;
+}
+
+/* Spin Box & Double Spin Box */
+QSpinBox,
+QDoubleSpinBox {
+    background-color: #ffffff;
+    border: 1px solid #cdd5e0;
+    border-radius: 6px;
+    padding: 5px 8px;
+    color: #1e3a5f;
+    min-height: 30px;
+}
+
+QSpinBox:focus,
+QDoubleSpinBox:focus {
+    border: 1.5px solid #3a7bd5;
+}
+
+QSpinBox::up-button,
+QDoubleSpinBox::up-button {
+    subcontrol-origin: border;
+    subcontrol-position: top right;
+    width: 20px;
+    border-left: 1px solid #cdd5e0;
+    border-bottom: 1px solid #cdd5e0;
+    border-top-right-radius: 6px;
+    background-color: #f7fafc;
+}
+
+QSpinBox::down-button,
+QDoubleSpinBox::down-button {
+    subcontrol-origin: border;
+    subcontrol-position: bottom right;
+    width: 20px;
+    border-left: 1px solid #cdd5e0;
+    border-top: 1px solid #cdd5e0;
+    border-bottom-right-radius: 6px;
+    background-color: #f7fafc;
+}
+
+/* Date / Time Edit */
+QDateEdit,
+QTimeEdit,
+QDateTimeEdit {
+    background-color: #ffffff;
+    border: 1px solid #cdd5e0;
+    border-radius: 6px;
+    padding: 5px 8px;
+    color: #1e3a5f;
+    min-height: 30px;
+}
+
+QDateEdit:focus,
+QTimeEdit:focus,
+QDateTimeEdit:focus {
+    border: 1.5px solid #3a7bd5;
+}
+
+QDateEdit::drop-down,
+QTimeEdit::drop-down,
+QDateTimeEdit::drop-down {
+    subcontrol-origin: padding;
+    subcontrol-position: top right;
+    width: 28px;
+    border-left: 1px solid #cdd5e0;
+    border-top-right-radius: 6px;
+    border-bottom-right-radius: 6px;
+    background-color: #f7fafc;
+}
+
+
+/* Table Widget — overflow fix: no clipping on cell content */
+QTableWidget,
+QTableView {
+    background-color: #ffffff;
+    alternate-background-color: #f7fafc;
+    border: 1px solid #dde3ed;
+    border-radius: 8px;
+    gridline-color: #edf2f7;
+    outline: none;
+    selection-background-color: #ebf4ff;
+    selection-color: #1e3a5f;
+}
+
+QTableWidget::item:selected,
+QTableView::item:selected {
+    background-color: #dbeafe;
+    color: #1e3a5f;
+}
+
+QHeaderView::section:last {
+    border-right: none;
+}
+
+/* Scroll Bars */
+QScrollBar:vertical {
+    background-color: #f0f4f8;
+    width: 8px;
+    border-radius: 4px;
+    margin: 0;
+}
+
+QScrollBar::handle:vertical {
+    background-color: #b0c4de;
+    border-radius: 4px;
+    min-height: 30px;
+}
+
+QScrollBar::handle:vertical:hover {
+    background-color: #8aabd4;
+}
+
+QScrollBar::add-line:vertical,
+QScrollBar::sub-line:vertical {
+    height: 0;
+}
+
+QScrollBar:horizontal {
+    background-color: #f0f4f8;
+    height: 8px;
+    border-radius: 4px;
+    margin: 0;
+}
+
+QScrollBar::handle:horizontal {
+    background-color: #b0c4de;
+    border-radius: 4px;
+    min-width: 30px;
+}
+
+QScrollBar::handle:horizontal:hover {
+    background-color: #8aabd4;
+}
+
+QScrollBar::add-line:horizontal,
+QScrollBar::sub-line:horizontal {
+    width: 0;
+}
+
+/* Frames — dividers */
+QFrame[frameShape="4"],
+QFrame[frameShape="5"] {
+    color: #dde3ed;
+    background-color: #dde3ed;
+}
+
+/* Tool Tip */
+QToolTip {
+    background-color: #1e3a5f;
+    color: #ffffff;
+    border: none;
+    border-radius: 5px;
+    padding: 5px 10px;
+    font-size: 12px;
+    opacity: 230;
+}
+
+/* Named semantic labels */
+QLabel#pageTitle {
+    font-size: 18px;
+    font-weight: 700;
+    color: #1e3a5f;
+}
