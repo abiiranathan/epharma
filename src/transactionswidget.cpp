@@ -1,11 +1,168 @@
 #include "transactionswidget.hpp"
 #include <QDateTime>
+#include <QFont>
 #include <QGroupBox>
 #include <QHBoxLayout>
 #include <QHeaderView>
 #include <QMessageBox>
+#include <QPainter>
+#include <QPrintDialog>
+#include <QPrinter>
 #include <QVBoxLayout>
 #include "database.hpp"
+
+// =================== Receipt Printer ===================
+
+static void printReceipt(const Transaction& t, QWidget* parent) {
+    QPrinter printer(QPrinter::HighResolution);
+
+    // Default to receipt paper: 80mm wide (most common thermal receipt printer)
+    // 80mm = ~226 points (1 pt = 1/72 inch, 80mm / 25.4 * 72 ≈ 227)
+    // Height is set long enough; printer will cut at end of content.
+    printer.setPageSize(QPageSize(QSizeF(80, 297), QPageSize::Millimeter));
+    printer.setPageMargins(QMarginsF(4, 4, 4, 4), QPageLayout::Millimeter);
+    printer.setFullPage(false);
+    printer.setColorMode(QPrinter::GrayScale);
+
+    QPrintDialog dlg(&printer, parent);
+    dlg.setWindowTitle("Print Receipt — EPharmacy");
+    // Allow printer selection and page setup
+    dlg.setOptions(QAbstractPrintDialog::PrintToFile | QAbstractPrintDialog::PrintShowPageSize);
+
+    if (dlg.exec() != QDialog::Accepted) {
+        return;
+    }
+
+    QPainter p;
+    if (!p.begin(&printer)) {
+        QMessageBox::critical(parent, "Print Error", "Failed to open printer.");
+        return;
+    }
+
+    // ---- Coordinate system ----
+    // Work in printer points. Get the usable rect.
+    const QRectF pageRect = printer.pageLayout().paintRectPixels(printer.resolution());
+    const qreal W = pageRect.width();
+    const qreal dpi = printer.resolution();  // dots per inch
+    const qreal mm = dpi / 25.4;             // 1mm in dots
+
+    // Fonts scaled for receipt printer
+    QFont fTitle("Courier New", -1, QFont::Bold);
+    fTitle.setPixelSize(qRound(4.0 * mm));  // ~4mm tall
+
+    QFont fHeader("Courier New", -1, QFont::Bold);
+    fHeader.setPixelSize(qRound(3.2 * mm));
+
+    QFont fNormal("Courier New");
+    fNormal.setPixelSize(qRound(3.0 * mm));
+
+    QFont fSmall("Courier New");
+    fSmall.setPixelSize(qRound(2.5 * mm));
+
+    QFont fTotal("Courier New", -1, QFont::Bold);
+    fTotal.setPixelSize(qRound(4.5 * mm));
+
+    const qreal lineH = 3.6 * mm;    // normal line height
+    const qreal lineHS = 2.9 * mm;   // small line height
+    const qreal dotLine = 0.3 * mm;  // divider thickness
+
+    qreal y = 0;
+
+    auto drawHRule = [&](bool bold = false) {
+        p.setPen(QPen(Qt::black, bold ? dotLine * 2 : dotLine));
+        p.drawLine(QPointF(0, y), QPointF(W, y));
+        y += 1.5 * mm;
+    };
+
+    auto drawCentered = [&](const QString& text, const QFont& font, qreal h) {
+        p.setFont(font);
+        p.setPen(Qt::black);
+        p.drawText(QRectF(0, y, W, h), Qt::AlignHCenter | Qt::AlignVCenter, text);
+        y += h;
+    };
+
+    auto drawRow = [&](const QString& left, const QString& right, const QFont& font, qreal h) {
+        p.setFont(font);
+        p.setPen(Qt::black);
+        p.drawText(QRectF(0, y, W * 0.65, h), Qt::AlignLeft | Qt::AlignVCenter, left);
+        p.drawText(QRectF(0, y, W, h), Qt::AlignRight | Qt::AlignVCenter, right);
+        y += h;
+    };
+
+    // ---- Header ----
+    y += 2 * mm;
+    drawCentered("EPharmacy", fTitle, 5 * mm);
+    drawCentered("Sales Receipt", fNormal, lineH);
+    y += 1.5 * mm;
+    drawHRule(true);
+
+    // ---- Meta ----
+    drawRow("Date:", t.createdAt.toString("dd/MM/yyyy hh:mm"), fSmall, lineHS);
+    drawRow("Ref #:", QString::number(t.id), fSmall, lineHS);
+    y += 1 * mm;
+    drawHRule();
+
+    // ---- Column headers ----
+    p.setFont(fHeader);
+    p.setPen(Qt::black);
+    p.drawText(QRectF(0, y, W * 0.55, lineH), Qt::AlignLeft | Qt::AlignVCenter, "Item");
+    p.drawText(QRectF(W * 0.55, y, W * 0.13, lineH), Qt::AlignRight | Qt::AlignVCenter, "Qty");
+    p.drawText(QRectF(W * 0.68, y, W * 0.16, lineH), Qt::AlignRight | Qt::AlignVCenter, "Price");
+    p.drawText(QRectF(W * 0.84, y, W * 0.16, lineH), Qt::AlignRight | Qt::AlignVCenter, "Sub");
+    y += lineH;
+    drawHRule();
+
+    // ---- Items ----
+    double grandTotal = 0.0;
+    for (const auto& item : t.items) {
+        const double sub = item.subtotal();
+        grandTotal += sub;
+
+        // Product name — may need to wrap on narrow paper
+        QString name = item.genericName;
+        if (!item.brandName.isEmpty()) {
+            name += " (" + item.brandName + ")";
+        }
+
+        // Measure name width; wrap if too wide
+        QFontMetricsF fm(fNormal);
+        const qreal maxNameW = W * 0.54;
+        if (fm.horizontalAdvance(name) > maxNameW) {
+            // Try generic name alone first
+            if (fm.horizontalAdvance(item.genericName) <= maxNameW) {
+                name = item.genericName;
+            } else {
+                // Elide
+                name = fm.elidedText(item.genericName, Qt::ElideRight, static_cast<int>(maxNameW));
+            }
+        }
+
+        p.setFont(fNormal);
+        p.setPen(Qt::black);
+        p.drawText(QRectF(0, y, W * 0.55, lineH), Qt::AlignLeft | Qt::AlignVCenter, name);
+        p.drawText(QRectF(W * 0.55, y, W * 0.13, lineH), Qt::AlignRight | Qt::AlignVCenter,
+                   QString::number(item.quantity));
+        p.drawText(QRectF(W * 0.68, y, W * 0.16, lineH), Qt::AlignRight | Qt::AlignVCenter,
+                   QString::number(item.sellingPrice, 'f', 0));
+        p.drawText(QRectF(W * 0.84, y, W * 0.16, lineH), Qt::AlignRight | Qt::AlignVCenter,
+                   QString::number(sub, 'f', 0));
+        y += lineH;
+    }
+
+    // ---- Total ----
+    y += 1 * mm;
+    drawHRule(true);
+    drawRow("TOTAL (UGX)", QString::number(grandTotal, 'f', 2), fTotal, 5.5 * mm);
+    drawHRule(true);
+
+    // ---- Footer ----
+    y += 2 * mm;
+    drawCentered("Thank you for your purchase!", fSmall, lineHS);
+    drawCentered("EPharmacy — Serving you better", fSmall, lineHS);
+    y += 3 * mm;
+
+    p.end();
+}
 
 // =================== TransactionDetailWidget ===================
 
@@ -34,6 +191,7 @@ void TransactionDetailWidget::setupUi() {
 
     // Print button
     auto* printBtn = new QPushButton("🖨  Print Receipt");
+    printBtn->setObjectName("successBtn");
     printBtn->setFixedHeight(32);
     headerRow->addWidget(printBtn);
     root->addLayout(headerRow);
@@ -145,32 +303,8 @@ void TransactionDetailWidget::setupUi() {
         root->addWidget(note);
     }
 
-    // Print functionality
-    connect(printBtn, &QPushButton::clicked, this, [this] {
-        // Simple print dialog using text
-        QString receipt;
-        receipt += "========================================\n";
-        receipt += "           EPharmacy Receipt\n";
-        receipt += "========================================\n";
-        receipt += QString("Date: %1\n").arg(m_transaction.createdAt.toString("dd MMM yyyy  hh:mm:ss"));
-        receipt += QString("Ref: #%1\n").arg(m_transaction.id);
-        receipt += "----------------------------------------\n";
-        for (const auto& item : m_transaction.items) {
-            receipt += QString("%-20s x%2\n").arg(item.genericName).arg(item.quantity);
-            receipt += QString("  @ %1  =  UGX %2\n").arg(item.sellingPrice, 0, 'f', 2).arg(item.subtotal(), 0, 'f', 2);
-        }
-        receipt += "========================================\n";
-        receipt += QString("TOTAL: UGX %1\n").arg(m_transaction.total(), 0, 'f', 2);
-        receipt += "========================================\n";
-        receipt += "       Thank you for your purchase!\n";
-
-        QMessageBox msgBox(this);
-        msgBox.setWindowTitle("Receipt Preview");
-        msgBox.setText("Receipt preview (send to printer):");
-        msgBox.setDetailedText(receipt);
-        msgBox.setStandardButtons(QMessageBox::Ok);
-        msgBox.exec();
-    });
+    // ---- Print receipt ----
+    connect(printBtn, &QPushButton::clicked, this, [this] { printReceipt(m_transaction, this); });
 }
 
 // =================== TransactionsWidget ===================

@@ -164,14 +164,14 @@ void ProductsWidget::setupUi() {
     m_table->setAlternatingRowColors(true);
     m_table->horizontalHeader()->setStretchLastSection(false);
     m_table->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
-    m_table->setColumnWidth(0, 45);
-    m_table->setColumnWidth(2, 130);
-    m_table->setColumnWidth(3, 60);
-    m_table->setColumnWidth(4, 95);
-    m_table->setColumnWidth(5, 95);
-    m_table->setColumnWidth(6, 120);
-    m_table->setColumnWidth(7, 150);
-    m_table->setColumnWidth(8, 110);
+    m_table->setColumnWidth(0, 45);   // for ID
+    m_table->setColumnWidth(2, 130);  // brand name
+    m_table->setColumnWidth(3, 60);   // for quantity
+    m_table->setColumnWidth(4, 100);  // for cost price
+    m_table->setColumnWidth(5, 120);  // for selling price
+    m_table->setColumnWidth(6, 150);  // barcode
+    m_table->setColumnWidth(7, 200);  // for expiry dates
+    m_table->setColumnWidth(8, 200);  // for action buttons
     m_table->verticalHeader()->setVisible(false);
     m_table->setShowGrid(false);
     root->addWidget(m_table);

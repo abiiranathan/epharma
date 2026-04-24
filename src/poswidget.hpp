@@ -40,6 +40,10 @@ class POSWidget : public QWidget {
     QList<Product> m_currentProducts;
     QList<TransactionItem> m_queueItems;
 
+    QTimer* m_barcodeTimer;
+    QString m_barcodeBuffer;
+
+    bool eventFilter(QObject* obj, QEvent* event) override;
     void setupUi();
     void loadProducts(const QString& filter = QString());
     void updateTotal();

@@ -35,23 +35,16 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    // Login -> Main window loop.
-    // After the user logs out, MainWindow closes itself and the loop
-    // shows the login dialog again.
-    while (true) {
-        LoginWindow login;
-        if (login.exec() != QDialog::Accepted) {
-            break;
-        }
-
-        User loggedInUser = login.loggedInUser();
-        auto* mainWin = new MainWindow(loggedInUser);
-        mainWin->showMaximized();
-        app.exec();
-        delete mainWin;
-        // Loop: show login again
+    LoginWindow login;
+    if (login.exec() != QDialog::Accepted) {
+        return 1;
     }
 
+    User loggedInUser = login.loggedInUser();
+    auto* mainWin = new MainWindow(loggedInUser);
+    mainWin->showMaximized();
+    app.exec();
+    delete mainWin;
     Database::instance().close();
     return 0;
 }

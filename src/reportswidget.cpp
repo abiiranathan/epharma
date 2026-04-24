@@ -1,11 +1,16 @@
 #include "reportswidget.hpp"
 #include <QDateTime>
+#include <QDialog>
+#include <QDialogButtonBox>
 #include <QFont>
 #include <QGroupBox>
 #include <QHBoxLayout>
 #include <QHeaderView>
 #include <QLabel>
 #include <QMessageBox>
+#include <QPainter>
+#include <QPrintDialog>
+#include <QPrinter>
 #include <QScrollArea>
 #include <QVBoxLayout>
 #include <QtCharts/QBarCategoryAxis>
@@ -46,6 +51,121 @@ static QWidget* makeStatCard(const QString& title, QLabel*& valueLabel, const QS
     layout->addWidget(titleLbl);
     layout->addWidget(valueLabel);
     return card;
+}
+
+// =================== Sales Detail Dialog ===================
+static void showSalesDetailDialog(QWidget* parent, const QString& title, const QList<ProductSale>& sales) {
+    auto* dlg = new QDialog(parent, Qt::Dialog);
+    dlg->setWindowTitle(title);
+    dlg->setAttribute(Qt::WA_DeleteOnClose);
+    dlg->resize(1200, 600);
+
+    auto* root = new QVBoxLayout(dlg);
+    root->setContentsMargins(16, 16, 16, 16);
+    root->setSpacing(10);
+
+    // Title bar inside dialog
+    auto* heading = new QLabel(title);
+    heading->setStyleSheet("font-size: 15px; font-weight: 700; color: #1e3a5f;");
+    root->addWidget(heading);
+
+    // Summary strip
+    double totalIncome = 0, totalProfit = 0;
+    int totalQty = 0;
+    for (const auto& s : sales) {
+        totalIncome += s.income;
+        totalProfit += s.profit;
+        totalQty += s.quantitySold;
+    }
+
+    auto* summaryRow = new QHBoxLayout;
+    auto makeSummaryCard = [&](const QString& lbl, const QString& val, const QString& color) {
+        auto* w = new QWidget;
+        w->setStyleSheet(QString("background:%1;border-radius:6px;padding:8px 14px;").arg(color));
+        auto* lay = new QVBoxLayout(w);
+        lay->setContentsMargins(0, 0, 0, 0);
+        lay->setSpacing(2);
+        auto* l = new QLabel(lbl);
+        l->setStyleSheet("font-size:10px;font-weight:600;color:#555;");
+        auto* v = new QLabel(val);
+        v->setStyleSheet("font-size:14px;font-weight:700;color:#1e3a5f;");
+        lay->addWidget(l);
+        lay->addWidget(v);
+        return w;
+    };
+
+    summaryRow->addWidget(makeSummaryCard("TOTAL INCOME", fmtCurrency(totalIncome), "#ebf8ff"));
+    summaryRow->addSpacing(8);
+    summaryRow->addWidget(makeSummaryCard("TOTAL PROFIT", fmtCurrency(totalProfit), "#f0fff4"));
+    summaryRow->addSpacing(8);
+    summaryRow->addWidget(makeSummaryCard("UNITS SOLD", QString::number(totalQty), "#fffbeb"));
+    summaryRow->addSpacing(8);
+    summaryRow->addWidget(makeSummaryCard("PRODUCT LINES", QString::number(sales.size()), "#faf5ff"));
+    summaryRow->addStretch();
+    root->addLayout(summaryRow);
+
+    // Table
+    auto* tbl = new QTableWidget;
+    tbl->setColumnCount(6);
+    tbl->setHorizontalHeaderLabels({"Product", "Cost Price", "Selling Price", "Qty Sold", "Income", "Profit"});
+    tbl->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    tbl->setAlternatingRowColors(true);
+    tbl->setSelectionBehavior(QAbstractItemView::SelectRows);
+    tbl->verticalHeader()->setVisible(false);
+    tbl->setShowGrid(false);
+    tbl->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
+    tbl->setColumnWidth(1, 110);
+    tbl->setColumnWidth(2, 120);
+    tbl->setColumnWidth(3, 90);
+    tbl->setColumnWidth(4, 130);
+    tbl->setColumnWidth(5, 130);
+
+    tbl->setRowCount(static_cast<int>(sales.size()));
+    for (int i = 0; i < sales.size(); ++i) {
+        const auto& s = sales[i];
+
+        tbl->setItem(i, 0, new QTableWidgetItem(s.productName));
+
+        auto makeRight = [](const QString& text, const QColor& fg = QColor()) -> QTableWidgetItem* {
+            auto* item = new QTableWidgetItem(text);
+            item->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
+            if (fg.isValid()) {
+                item->setForeground(fg);
+            }
+            return item;
+        };
+
+        tbl->setItem(i, 1, makeRight(fmtCurrency(s.costPrice)));
+        tbl->setItem(i, 2, makeRight(fmtCurrency(s.sellingPrice)));
+
+        auto* qtyItem = new QTableWidgetItem(QString::number(s.quantitySold));
+        qtyItem->setTextAlignment(Qt::AlignCenter);
+        tbl->setItem(i, 3, qtyItem);
+
+        tbl->setItem(i, 4, makeRight(fmtCurrency(s.income), QColor("#2b6cb0")));
+
+        auto* profItem = makeRight(fmtCurrency(s.profit), s.profit >= 0 ? QColor("#2f855a") : QColor("#e53e3e"));
+        profItem->setFont(QFont("", -1, QFont::Bold));
+        tbl->setItem(i, 5, profItem);
+    }
+
+    if (sales.isEmpty()) {
+        tbl->setRowCount(1);
+        auto* empty = new QTableWidgetItem("No sales data for this period.");
+        empty->setTextAlignment(Qt::AlignCenter);
+        empty->setForeground(QColor("#a0aec0"));
+        tbl->setItem(0, 0, empty);
+        tbl->setSpan(0, 0, 1, 6);
+    }
+
+    root->addWidget(tbl);
+
+    // Close button
+    auto* btnBox = new QDialogButtonBox(QDialogButtonBox::Close);
+    QAbstractEventDispatcher::connect(btnBox, &QDialogButtonBox::rejected, dlg, &QDialog::accept);
+    root->addWidget(btnBox);
+
+    dlg->exec();
 }
 
 // =================== DashboardTab ===================
@@ -101,8 +221,14 @@ void DashboardTab::setupUi() {
         tbl->setAlternatingRowColors(true);
         tbl->verticalHeader()->setVisible(false);
         tbl->setShowGrid(false);
-        tbl->horizontalHeader()->setStretchLastSection(true);
+        tbl->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
+        tbl->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Fixed);
+
+        tbl->setColumnWidth(2, 120);
+        tbl->horizontalHeader()->setStretchLastSection(false);
         tbl->setMaximumHeight(260);
+        tbl->setStyleSheet("QTableWidget { padding: 8px; }");
+
         lay->addWidget(tbl);
         return grp;
     };
@@ -157,14 +283,13 @@ void DashboardTab::loadData() {  // NOLINT
     QList<double> dayValues(7, 0.0);
     for (const auto& r : daily) {
         if (r.transactionDate >= weekStart && r.transactionDate <= today) {
-            int idx = r.transactionDate.dayOfWeek() - 1;  // 0=Mon
+            int idx = r.transactionDate.dayOfWeek() - 1;
             if (idx >= 0 && idx < 7) {
                 dayValues[idx] += r.totalIncome;
             }
         }
     }
 
-    // Build weekly chart
     {
         auto* chart = new QChart;
         chart->setTitle("This Week's Sales");
@@ -235,7 +360,7 @@ void DashboardTab::loadData() {  // NOLINT
         m_monthlyChart->setRenderHint(QPainter::Antialiasing);
     }
 
-    // Daily table
+    // ---- Daily table ----
     m_dailyTable->setRowCount(0);
     int shown = 0;
     for (const auto& r : daily) {
@@ -245,6 +370,7 @@ void DashboardTab::loadData() {  // NOLINT
         int row = m_dailyTable->rowCount();
         m_dailyTable->insertRow(row);
         m_dailyTable->setItem(row, 0, new QTableWidgetItem(r.transactionDate.toString("ddd, dd MMM yyyy")));
+
         auto* incItem = new QTableWidgetItem(fmtCurrency(r.totalIncome));
         incItem->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
         incItem->setForeground(QColor("#2f855a"));
@@ -255,28 +381,10 @@ void DashboardTab::loadData() {  // NOLINT
         viewBtn->setStyleSheet(
             "QPushButton { background-color: #3a7bd5; color: white; border: none; "
             "border-radius: 3px; font-size: 11px; padding: 0 6px; }");
-        // View just shows a placeholder for now
         QDate d = r.transactionDate;
         connect(viewBtn, &QPushButton::clicked, this, [d, this] {
             auto sales = Database::instance().getDailyProductSales(d);
-            QString detail = QString("Sales for %1:\n\n").arg(d.toString("dd MMM yyyy"));
-            double total = 0;
-            for (const auto& s : sales) {
-                detail += QString("%1 x%2  =  UGX %3  (Profit: UGX %4)\n")
-                              .arg(s.productName)
-                              .arg(s.quantitySold)
-                              .arg(s.income, 0, 'f', 2)
-                              .arg(s.profit, 0, 'f', 2);
-                total += s.income;
-            }
-            detail += QString("\nTotal Income: UGX %1").arg(total, 0, 'f', 2);
-
-            auto* mb = new QMessageBox(this);
-            mb->setWindowTitle("Daily Product Sales");
-            mb->setText(QString("Sales for %1").arg(d.toString("dddd, dd MMM yyyy")));
-            mb->setDetailedText(detail);
-            mb->exec();
-            delete mb;
+            showSalesDetailDialog(this, QString("Daily Sales — %1").arg(d.toString("dddd, dd MMM yyyy")), sales);
         });
         m_dailyTable->setCellWidget(row, 2, viewBtn);
         shown++;
@@ -284,12 +392,13 @@ void DashboardTab::loadData() {  // NOLINT
     m_dailyTable->setColumnWidth(0, 160);
     m_dailyTable->setColumnWidth(1, 110);
 
-    // Monthly table
+    // ---- Monthly table ----
     m_monthlyTable->setRowCount(0);
     for (const auto& r : monthly) {
         int row = m_monthlyTable->rowCount();
         m_monthlyTable->insertRow(row);
         m_monthlyTable->setItem(row, 0, new QTableWidgetItem(r.month.toString("MMMM yyyy")));
+
         auto* incItem = new QTableWidgetItem(fmtCurrency(r.totalIncome));
         incItem->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
         incItem->setForeground(QColor("#2f855a"));
@@ -302,39 +411,22 @@ void DashboardTab::loadData() {  // NOLINT
             "border-radius: 3px; font-size: 11px; padding: 0 6px; }");
         int yr = r.month.year();
         int mo = r.month.month();
-
         connect(viewBtn, &QPushButton::clicked, this, [this, yr, mo] {
             auto sales = Database::instance().getMonthlyProductSales(yr, mo);
-            QString detail;
-            double total = 0;
-            for (const auto& s : sales) {
-                detail += QString("%1 x%2  Income: UGX %3  Profit: UGX %4\n")
-                              .arg(s.productName)
-                              .arg(s.quantitySold)
-                              .arg(s.income, 0, 'f', 2)
-                              .arg(s.profit, 0, 'f', 2);
-                total += s.income;
-            }
-
-            detail += QString("\nTotal: UGX %1").arg(total, 0, 'f', 2);
-            QMessageBox mb(this);
-            mb.setWindowTitle("Monthly Product Sales");
-            mb.setText(QString("Sales for %1/%2").arg(mo).arg(yr));
-            mb.setDetailedText(detail);
-            mb.exec();
+            showSalesDetailDialog(this, QString("Monthly Sales — %1/%2").arg(mo, 2, 10, QChar('0')).arg(yr), sales);
         });
         m_monthlyTable->setCellWidget(row, 2, viewBtn);
     }
-
     m_monthlyTable->setColumnWidth(0, 120);
     m_monthlyTable->setColumnWidth(1, 110);
 
-    // Annual table
+    // ---- Annual table ----
     m_annualTable->setRowCount(0);
     for (const auto& r : annual) {
         int row = m_annualTable->rowCount();
         m_annualTable->insertRow(row);
         m_annualTable->setItem(row, 0, new QTableWidgetItem(QString::number(r.year.year())));
+
         auto* incItem = new QTableWidgetItem(fmtCurrency(r.totalIncome));
         incItem->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
         incItem->setForeground(QColor("#2f855a"));
@@ -348,22 +440,7 @@ void DashboardTab::loadData() {  // NOLINT
         int yr = r.year.year();
         connect(viewBtn, &QPushButton::clicked, this, [this, yr] {
             auto sales = Database::instance().getAnnualProductSales(yr);
-            QString detail;
-            double total = 0;
-            for (const auto& s : sales) {
-                detail += QString("%1 x%2  Income: UGX %3  Profit: UGX %4\n")
-                              .arg(s.productName)
-                              .arg(s.quantitySold)
-                              .arg(s.income, 0, 'f', 2)
-                              .arg(s.profit, 0, 'f', 2);
-                total += s.income;
-            }
-            detail += QString("\nTotal: UGX %1").arg(total, 0, 'f', 2);
-            QMessageBox mb(this);
-            mb.setWindowTitle("Annual Product Sales");
-            mb.setText(QString("Sales for year %1").arg(yr));
-            mb.setDetailedText(detail);
-            mb.exec();
+            showSalesDetailDialog(this, QString("Annual Sales — %1").arg(yr), sales);
         });
         m_annualTable->setCellWidget(row, 2, viewBtn);
     }
@@ -435,11 +512,11 @@ void SalesReportTab::setupUi() {
     m_table->setAlternatingRowColors(true);
     m_table->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
     m_table->setColumnWidth(0, 120);
-    m_table->setColumnWidth(2, 80);
-    m_table->setColumnWidth(3, 100);
-    m_table->setColumnWidth(4, 100);
-    m_table->setColumnWidth(5, 110);
-    m_table->setColumnWidth(6, 110);
+    m_table->setColumnWidth(2, 100);
+    m_table->setColumnWidth(3, 120);
+    m_table->setColumnWidth(4, 120);
+    m_table->setColumnWidth(5, 130);
+    m_table->setColumnWidth(6, 130);
     m_table->verticalHeader()->setVisible(false);
     m_table->setShowGrid(false);
     root->addWidget(m_table);
@@ -454,7 +531,6 @@ void SalesReportTab::onGenerate() {
     QDate to = m_dateTo->date();
 
     if (period == "Daily") {
-        // Collect for all days in range
         QDate d = from;
         while (d <= to) {
             sales += Database::instance().getDailyProductSales(d);
@@ -515,9 +591,7 @@ void SalesReportTab::onGenerate() {
                               .arg(sales.size()));
 }
 
-void SalesReportTab::refresh() {
-    // don't auto-generate, let user click
-}
+void SalesReportTab::refresh() { onGenerate(); }
 
 // =================== StockCardTab ===================
 
@@ -605,14 +679,10 @@ void StockCardTab::onGenerate() {
 
         m_table->setItem(i, 3, center(sc.openingQuantity));
 
-        auto* inItem = center(sc.quantityIn, "#2f855a");
-        if (sc.quantityIn > 0) {
-            inItem->setForeground(QColor("#2f855a"));
-        }
+        auto* inItem = center(sc.quantityIn, sc.quantityIn > 0 ? "#2f855a" : "");
         m_table->setItem(i, 4, inItem);
 
-        auto* outItem = center(sc.quantityOut, "#e53e3e");
-        m_table->setItem(i, 5, outItem);
+        m_table->setItem(i, 5, center(sc.quantityOut, "#e53e3e"));
 
         auto* closItem = center(sc.closingQuantity);
         if (sc.closingQuantity == 0) {

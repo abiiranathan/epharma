@@ -245,15 +245,27 @@ void InvoiceDetailWidget::setupUi() {
     m_itemsTable->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_itemsTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
     m_itemsTable->setAlternatingRowColors(true);
-    m_itemsTable->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
-    m_itemsTable->setColumnWidth(1, 120);
-    m_itemsTable->setColumnWidth(2, 60);
-    m_itemsTable->setColumnWidth(3, 90);
-    m_itemsTable->setColumnWidth(4, 100);
-    m_itemsTable->setColumnWidth(5, 100);
-    m_itemsTable->setColumnWidth(6, 70);
     m_itemsTable->verticalHeader()->setVisible(false);
     m_itemsTable->setShowGrid(false);
+
+    // Set ALL columns to stretch first — distributes space proportionally
+    m_itemsTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+
+    // Then pin the narrow columns to fixed widths so they don't shrink/grow
+    m_itemsTable->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Fixed);    // Qty
+    m_itemsTable->horizontalHeader()->setSectionResizeMode(3, QHeaderView::Stretch);  // Rate
+    m_itemsTable->horizontalHeader()->setSectionResizeMode(4, QHeaderView::Stretch);  // Total
+    m_itemsTable->horizontalHeader()->setSectionResizeMode(5, QHeaderView::Fixed);    // Expiry
+    m_itemsTable->horizontalHeader()->setSectionResizeMode(6, QHeaderView::Fixed);    // Action
+
+    m_itemsTable->setColumnWidth(1, 150);  // Brand
+    m_itemsTable->setColumnWidth(2, 60);   // Qty
+    m_itemsTable->setColumnWidth(3, 130);  // Rate
+    m_itemsTable->setColumnWidth(4, 130);  // Total
+    m_itemsTable->setColumnWidth(5, 110);  // Expiry
+    m_itemsTable->setColumnWidth(6, 70);   // Action
+
+    // Columns 0 (Product Name) and 1 (Brand) will now stretch to fill the remaining space
     root->addWidget(m_itemsTable);
 }
 
@@ -366,14 +378,18 @@ void InvoicesWidget::setupUi() {
     m_table->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_table->setEditTriggers(QAbstractItemView::NoEditTriggers);
     m_table->setAlternatingRowColors(true);
-    m_table->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Stretch);
+
+    for (int i = 0; i < m_table->columnCount(); ++i) {
+        m_table->horizontalHeader()->setSectionResizeMode(i, QHeaderView::Stretch);
+    }
+
     m_table->setColumnWidth(0, 100);
-    m_table->setColumnWidth(1, 130);
-    m_table->setColumnWidth(3, 110);
-    m_table->setColumnWidth(4, 110);
-    m_table->setColumnWidth(5, 100);
+    m_table->setColumnWidth(1, 150);
+    m_table->setColumnWidth(3, 120);
+    m_table->setColumnWidth(4, 120);
+    m_table->setColumnWidth(5, 120);
     m_table->setColumnWidth(6, 140);
-    m_table->setColumnWidth(7, 130);
+    m_table->setColumnWidth(7, 150);
     m_table->verticalHeader()->setVisible(false);
     m_table->setShowGrid(false);
     listLayout->addWidget(m_table);

@@ -8,6 +8,7 @@
 #include <QScrollArea>
 #include <QShortcut>
 #include <QSplitter>
+#include <QTimer>
 #include <QVBoxLayout>
 #include <algorithm>
 #include "database.hpp"
@@ -68,14 +69,18 @@ void POSWidget::setupUi() {
     m_productsTable->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_productsTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
     m_productsTable->setAlternatingRowColors(true);
-    m_productsTable->horizontalHeader()->setStretchLastSection(true);
+    m_productsTable->horizontalHeader()->setStretchLastSection(false);
     m_productsTable->verticalHeader()->setVisible(false);
-    m_productsTable->setColumnWidth(0, 45);
-    m_productsTable->setColumnWidth(1, 200);
-    m_productsTable->setColumnWidth(2, 130);
-    m_productsTable->setColumnWidth(3, 90);
-    m_productsTable->setColumnWidth(4, 60);
-    m_productsTable->setShowGrid(false);
+    m_productsTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Fixed);       // lock all first
+    m_productsTable->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);  // only Generic Name stretches
+
+    m_productsTable->setColumnWidth(0, 40);  // ID
+    // column 1 stretches — no setColumnWidth needed
+    m_productsTable->setColumnWidth(2, 180);  // Brand
+    m_productsTable->setColumnWidth(3, 120);  // Price
+    m_productsTable->setColumnWidth(4, 80);   // Stock
+    m_productsTable->setColumnWidth(5, 100);  // Expiry
+
     m_productsTable->setSelectionMode(QAbstractItemView::SingleSelection);
 
     auto* addHint = new QLabel("Double-click or press Enter to add to bill");
@@ -145,7 +150,6 @@ void POSWidget::setupUi() {
 
     // Connect signals
     connect(m_searchEdit, &QLineEdit::textChanged, this, &POSWidget::onSearchChanged);
-    connect(m_barcodeEdit, &QLineEdit::returnPressed, this, &POSWidget::onBarcodeEntered);
     connect(m_productsTable, &QTableWidget::cellDoubleClicked, this, &POSWidget::onProductDoubleClicked);
     connect(m_saveBtn, &QPushButton::clicked, this, &POSWidget::saveTransaction);
     connect(m_clearBtn, &QPushButton::clicked, this, &POSWidget::clearQueue);
@@ -159,6 +163,13 @@ void POSWidget::setupUi() {
             addProductToQueue(m_currentProducts[row]);
         }
     });
+
+    m_barcodeTimer = new QTimer(this);
+    m_barcodeTimer->setSingleShot(true);
+    m_barcodeTimer->setInterval(100);  // 100ms gap = end of scan burst
+    connect(m_barcodeTimer, &QTimer::timeout, this, &POSWidget::onBarcodeEntered);
+    connect(m_barcodeEdit, &QLineEdit::returnPressed, this, &POSWidget::onBarcodeEntered);
+    qApp->installEventFilter(this);
 }
 
 void POSWidget::loadProducts(const QString& filter) {
@@ -207,12 +218,45 @@ void POSWidget::loadProducts(const QString& filter) {
 
 void POSWidget::onSearchChanged(const QString& text) { loadProducts(text); }
 
+bool POSWidget::eventFilter(QObject* obj, QEvent* event) {
+    if (event->type() == QEvent::KeyPress) {
+        auto* ke = static_cast<QKeyEvent*>(event);
+
+        // Let normal typing in search/barcode fields pass through untouched
+        if (obj == m_searchEdit || obj == m_barcodeEdit) {
+            return QWidget::eventFilter(obj, event);
+        }
+
+        QString ch = ke->text();
+
+        if (ke->key() == Qt::Key_Return || ke->key() == Qt::Key_Enter) {
+            // Only act if we actually accumulated something
+            if (!m_barcodeBuffer.isEmpty()) {
+                m_barcodeEdit->setText(m_barcodeBuffer);
+                m_barcodeBuffer.clear();
+                m_barcodeTimer->stop();
+                onBarcodeEntered();
+                return true;
+            }
+            // Don't consume Enter if buffer is empty — let other widgets handle it
+            return false;
+        }
+
+        if (!ch.isEmpty() && ch[0].isPrint()) {
+            m_barcodeBuffer += ch;
+            m_barcodeTimer->start();
+            return true;
+        }
+    }
+    return QWidget::eventFilter(obj, event);
+}
 void POSWidget::onBarcodeEntered() {
     QString barcode = m_barcodeEdit->text().trimmed();
     if (barcode.isEmpty()) {
         return;
     }
 
+    m_barcodeBuffer.clear();  // safety clear
     Product p = Database::instance().getProductByBarcode(barcode);
     m_barcodeEdit->clear();
 

@@ -827,8 +827,11 @@ bool Database::addStockIn(const StockInItem& item) {
     beginTransaction();
 
     QSqlQuery q(m_db);
-    q.prepare(R"(INSERT INTO stock_in (product_id, invoice_id, quantity, cost_price, expiry_date, comment)
-                 VALUES (?,?,?,?,?,?))");
+    q.prepare(R"(
+        INSERT INTO stock_in (
+                    product_id, invoice_id, quantity, cost_price, expiry_date, comment
+                ) VALUES (?,?,?,?,?,?)
+    )");
     q.addBindValue(item.productId);
     q.addBindValue(item.invoiceId);
     q.addBindValue(item.quantity);
