@@ -11,9 +11,9 @@
 int main(int argc, char* argv[]) {
     qputenv("QT_LOGGING_RULES", "qt.qpa.wayland.textinput=false");
     QApplication app(argc, argv);
-    app.setApplicationName("EPharmacy");
+    app.setApplicationName("Tella POS");
     app.setApplicationVersion("1.0.0");
-    app.setOrganizationName("EPharmacy");
+    app.setOrganizationName("Tella POS");
 
     // Load stylesheet from resources
     QFile styleFile(":/style.qss");
@@ -25,7 +25,7 @@ int main(int argc, char* argv[]) {
     // Determine database path in user's app data directory
     QString dataDir = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
     QDir().mkpath(dataDir);
-    QString dbPath = dataDir + "/epharmacy.db";
+    QString dbPath = dataDir + "/tella.db";
 
     // Open database
     if (!Database::instance().open(dbPath)) {

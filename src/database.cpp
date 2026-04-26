@@ -6,6 +6,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QStringList>
+#include <QTimeZone>
 #include <QVariant>
 #include <QtSql/QSqlError>
 #include <QtSql/QSqlQuery>
@@ -16,7 +17,7 @@ Database& Database::instance() {
 }
 
 bool Database::open(const QString& path) {
-    m_db = QSqlDatabase::addDatabase("QSQLITE", "epharmacy");
+    m_db = QSqlDatabase::addDatabase("QSQLITE", "tella");
     m_db.setDatabaseName(path);
     if (!m_db.open()) {
         m_lastError = m_db.lastError().text();
@@ -282,6 +283,8 @@ User Database::userFromQuery(QSqlQuery& q) {
     u.isActive = q.value("is_active").toInt() != 0;
     u.isAdmin = q.value("is_admin").toInt() != 0;
     u.createdAt = QDateTime::fromString(q.value("created_at").toString(), "yyyy-MM-dd hh:mm:ss");
+    u.createdAt.setTimeZone(QTimeZone::utc());
+    u.createdAt = u.createdAt.toLocalTime();
     return u;
 }
 
@@ -388,8 +391,13 @@ Product Database::productFromQuery(QSqlQuery& q) {
     } else {
         p.barcode = q.value("barcode").toString();
     }
+
     p.createdAt = QDateTime::fromString(q.value("created_at").toString(), "yyyy-MM-dd hh:mm:ss");
     p.updatedAt = QDateTime::fromString(q.value("updated_at").toString(), "yyyy-MM-dd hh:mm:ss");
+    p.createdAt.setTimeZone(QTimeZone::utc());
+    p.updatedAt.setTimeZone(QTimeZone::utc());
+    p.createdAt = p.createdAt.toLocalTime();
+    p.updatedAt = p.updatedAt.toLocalTime();
     p.expiryDates = getProductExpiry(p.id);
     return p;
 }
@@ -579,6 +587,8 @@ Transaction Database::transactionFromQuery(QSqlQuery& q) {
     t.id = q.value("id").toInt();
     t.userId = q.value("user_id").toInt();
     t.createdAt = QDateTime::fromString(q.value("created_at").toString(), "yyyy-MM-dd hh:mm:ss");
+    t.createdAt.setTimeZone(QTimeZone::utc());
+    t.createdAt = t.createdAt.toLocalTime();
 
     QByteArray itemsJson = q.value("items").toByteArray();
     QJsonDocument doc = QJsonDocument::fromJson(itemsJson);
@@ -714,6 +724,8 @@ Invoice Database::invoiceFromQuery(QSqlQuery& q) {
     inv.supplier = q.value("supplier").toString();
     inv.userId = q.value("user_id").toInt();
     inv.createdAt = QDateTime::fromString(q.value("created_at").toString(), "yyyy-MM-dd hh:mm:ss");
+    inv.createdAt.setTimeZone(QTimeZone::utc());
+    inv.createdAt = inv.createdAt.toLocalTime();
     return inv;
 }
 
@@ -811,6 +823,9 @@ StockInItem Database::stockInFromQuery(QSqlQuery& q) {
     s.expiryDate = QDate::fromString(q.value("expiry_date").toString(), Qt::ISODate);
     s.comment = q.value("comment").toString();
     s.createdAt = QDateTime::fromString(q.value("created_at").toString(), "yyyy-MM-dd hh:mm:ss");
+    s.createdAt.setTimeZone(QTimeZone::utc());
+    s.createdAt = s.createdAt.toLocalTime();
+
     // joined
     QVariant gn = q.value("generic_name");
     QVariant bn = q.value("brand_name");

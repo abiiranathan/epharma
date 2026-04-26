@@ -8,7 +8,7 @@
 #include "database.hpp"
 
 LoginWindow::LoginWindow(QWidget* parent) : QDialog(parent) {
-    setWindowTitle("EPharmacy — Login");
+    setWindowTitle("Tella POS — Login");
     setWindowFlags(Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint);
     setFixedSize(420, 480);
     setupUi();
@@ -32,9 +32,9 @@ void LoginWindow::setupUi() {
     auto* bannerLayout = new QVBoxLayout(banner);
     bannerLayout->setContentsMargins(24, 16, 24, 16);
 
-    auto* titleLbl = new QLabel("💊 EPharmacy");
+    auto* titleLbl = new QLabel("Tella POS");
     titleLbl->setStyleSheet("color: #ffffff; font-size: 22px; font-weight: 700;");
-    auto* subLbl = new QLabel("Pharmacy Management System");
+    auto* subLbl = new QLabel("Point of Sale System");
     subLbl->setStyleSheet("color: #8ab4d8; font-size: 12px;");
     bannerLayout->addWidget(titleLbl);
     bannerLayout->addWidget(subLbl);

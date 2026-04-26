@@ -13,7 +13,7 @@
 #include <QVBoxLayout>
 
 MainWindow::MainWindow(const User& user, QWidget* parent) : QMainWindow(parent), m_currentUser(user) {
-    setWindowTitle("EPharmacy — Point of Sale");
+    setWindowTitle("Tella — Point of Sale");
     setMinimumSize(1200, 780);
 
     if (QScreen* s = QApplication::primaryScreen()) {
@@ -45,9 +45,9 @@ void MainWindow::setupUi() {
     titleWidget->setStyleSheet("background-color: #152d4a;");
     auto* titleLayout = new QVBoxLayout(titleWidget);
     titleLayout->setContentsMargins(16, 20, 16, 16);
-    auto* appTitle = new QLabel("💊 EPharmacy");
+    auto* appTitle = new QLabel("Tella POS");
     appTitle->setStyleSheet("color: #ffffff; font-size: 17px; font-weight: 700;");
-    auto* appSub = new QLabel("Management System");
+    auto* appSub = new QLabel("Point of Sale System");
     appSub->setStyleSheet("color: #7aa3c8; font-size: 11px;");
     titleLayout->addWidget(appTitle);
     titleLayout->addWidget(appSub);
@@ -123,7 +123,7 @@ void MainWindow::setupUi() {
     mainLayout->addWidget(m_stack);
 
     // Status bar
-    statusBar()->showMessage(QString("Logged in as: %1  |  EPharmacy v1.0").arg(m_currentUser.username));
+    statusBar()->showMessage(QString("Logged in as: %1  |  Tella POS v1.0").arg(m_currentUser.username));
 
     // Connect signals
     connect(logoutBtn, &QPushButton::clicked, this, &MainWindow::onLogout);

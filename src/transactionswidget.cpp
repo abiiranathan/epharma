@@ -25,7 +25,7 @@ static void printReceipt(const Transaction& t, QWidget* parent) {
     printer.setColorMode(QPrinter::GrayScale);
 
     QPrintDialog dlg(&printer, parent);
-    dlg.setWindowTitle("Print Receipt — EPharmacy");
+    dlg.setWindowTitle("Print Receipt — Tella POS");
     // Allow printer selection and page setup
     dlg.setOptions(QAbstractPrintDialog::PrintToFile | QAbstractPrintDialog::PrintShowPageSize);
 
@@ -91,7 +91,7 @@ static void printReceipt(const Transaction& t, QWidget* parent) {
 
     // ---- Header ----
     y += 2 * mm;
-    drawCentered("EPharmacy", fTitle, 5 * mm);
+    drawCentered("Tella POS", fTitle, 5 * mm);
     drawCentered("Sales Receipt", fNormal, lineH);
     y += 1.5 * mm;
     drawHRule(true);
@@ -158,7 +158,7 @@ static void printReceipt(const Transaction& t, QWidget* parent) {
     // ---- Footer ----
     y += 2 * mm;
     drawCentered("Thank you for your purchase!", fSmall, lineHS);
-    drawCentered("EPharmacy — Serving you better", fSmall, lineHS);
+    drawCentered("Tella POS — Serving you better", fSmall, lineHS);
     y += 3 * mm;
 
     p.end();
@@ -275,6 +275,8 @@ void TransactionDetailWidget::setupUi() {
 
     // Cancel button (only within 1 hour)
     qint64 elapsed = m_transaction.createdAt.secsTo(QDateTime::currentDateTime());
+    qDebug() << "Transaction age (secs):" << elapsed;
+
     if (elapsed <= 3600) {
         auto* cancelBtn = new QPushButton("🚫  Cancel Transaction");
         cancelBtn->setObjectName("dangerBtn");

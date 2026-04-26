@@ -11,7 +11,7 @@
 class POSWidget : public QWidget {
     Q_OBJECT
   public:
-    explicit POSWidget(const User& user, QWidget* parent = nullptr);
+    explicit POSWidget(User user, QWidget* parent = nullptr);
 
   private slots:
     void onBarcodeEntered();

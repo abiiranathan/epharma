@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.30)
-project(epharmacy LANGUAGES CXX)
+project(tella LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -17,7 +17,7 @@ find_package(Qt6 REQUIRED COMPONENTS
     PrintSupport
 )
 
-qt_add_executable(epharmacy
+qt_add_executable(tella
     src/main.cpp
     src/database.cpp
     src/loginwindow.cpp
@@ -32,9 +32,9 @@ qt_add_executable(epharmacy
     resources/resources.qrc
 )
 
-target_include_directories(epharmacy PRIVATE src)
+target_include_directories(tella PRIVATE src)
 
-target_link_libraries(epharmacy PRIVATE
+target_link_libraries(tella PRIVATE
     Qt6::Core
     Qt6::Gui
     Qt6::Widgets
@@ -45,5 +45,5 @@ target_link_libraries(epharmacy PRIVATE
 
 # Installation rules
 if(UNIX AND NOT ANDROID)
-    install(TARGETS epharmacy DESTINATION /opt/epharmacy/bin)
+    install(TARGETS tella DESTINATION /opt/tella/bin)
 endif()

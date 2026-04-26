@@ -13,7 +13,7 @@
 #include <algorithm>
 #include "database.hpp"
 
-POSWidget::POSWidget(const User& user, QWidget* parent) : QWidget(parent), m_currentUser(user) {
+POSWidget::POSWidget(User user, QWidget* parent) : QWidget(parent), m_currentUser(std::move(user)) {
     setupUi();
     loadProducts();
 }
