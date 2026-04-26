@@ -230,11 +230,11 @@ void TransactionDetailWidget::setupUi() {
     tbl->setEditTriggers(QAbstractItemView::NoEditTriggers);
     tbl->setAlternatingRowColors(true);
     tbl->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
-    tbl->setColumnWidth(1, 120);
-    tbl->setColumnWidth(2, 120);
-    tbl->setColumnWidth(3, 90);
-    tbl->setColumnWidth(4, 55);
-    tbl->setColumnWidth(5, 100);
+    tbl->setColumnWidth(1, 140);
+    tbl->setColumnWidth(2, 140);
+    tbl->setColumnWidth(3, 100);
+    tbl->setColumnWidth(4, 70);
+    tbl->setColumnWidth(5, 140);
     tbl->verticalHeader()->setVisible(false);
     tbl->setShowGrid(false);
     tbl->setRowCount(static_cast<int>(m_transaction.items.size()));

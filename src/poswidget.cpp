@@ -250,6 +250,7 @@ bool POSWidget::eventFilter(QObject* obj, QEvent* event) {
     }
     return QWidget::eventFilter(obj, event);
 }
+
 void POSWidget::onBarcodeEntered() {
     QString barcode = m_barcodeEdit->text().trimmed();
     if (barcode.isEmpty()) {
