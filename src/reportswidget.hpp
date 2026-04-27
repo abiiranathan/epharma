@@ -9,7 +9,13 @@
 #include <QTabWidget>
 #include <QTableWidget>
 #include <QWidget>
+#include <QtCharts/QBarCategoryAxis>
+#include <QtCharts/QBarSeries>
 #include <QtCharts/QChartView>
+#include <QtCharts/QDateTimeAxis>
+#include <QtCharts/QLineSeries>
+#include <QtCharts/QPieSeries>
+#include <QtCharts/QValueAxis>
 #include "models.hpp"
 
 class DashboardTab : public QWidget {
@@ -48,9 +54,23 @@ class SalesReportTab : public QWidget {
     QDateEdit* m_dateTo;
     QTableWidget* m_table;
     QLabel* m_totalLabel;
-    void setupUi();
-};
 
+    // ── new chart members ──
+    QChartView* m_incomeChartView;
+    QChartView* m_profitChartView;
+    QChartView* m_topProductsChartView;
+
+    // stat card labels
+    QLabel* m_statIncome;
+    QLabel* m_statProfit;
+    QLabel* m_statMargin;
+    QLabel* m_statUnits;
+    QLabel* m_statLines;
+    QLabel* m_statAvgOrder;
+
+    void setupUi();
+    void updateCharts(const QList<ProductSale>& sales);
+};
 class StockCardTab : public QWidget {
     Q_OBJECT
   public:

@@ -1,13 +1,19 @@
 #include "poswidget.hpp"
+#include <QComboBox>
+#include <QDateEdit>
+#include <QDoubleSpinBox>
 #include <QGroupBox>
 #include <QHBoxLayout>
 #include <QHeaderView>
 #include <QKeyEvent>
 #include <QLocale>
 #include <QMessageBox>
+#include <QPlainTextEdit>
 #include <QScrollArea>
 #include <QShortcut>
+#include <QSpinBox>
 #include <QSplitter>
+#include <QTextEdit>
 #include <QTimer>
 #include <QVBoxLayout>
 #include <algorithm>
@@ -169,7 +175,9 @@ void POSWidget::setupUi() {
     m_barcodeTimer->setInterval(100);  // 100ms gap = end of scan burst
     connect(m_barcodeTimer, &QTimer::timeout, this, &POSWidget::onBarcodeEntered);
     connect(m_barcodeEdit, &QLineEdit::returnPressed, this, &POSWidget::onBarcodeEntered);
-    qApp->installEventFilter(this);
+
+    // Install event filter to capture barcode scanner input globally
+    m_productsTable->installEventFilter(this);
 }
 
 void POSWidget::loadProducts(const QString& filter) {
@@ -222,15 +230,16 @@ bool POSWidget::eventFilter(QObject* obj, QEvent* event) {
     if (event->type() == QEvent::KeyPress) {
         auto* ke = static_cast<QKeyEvent*>(event);
 
-        // Let normal typing in search/barcode fields pass through untouched
-        if (obj == m_searchEdit || obj == m_barcodeEdit) {
+        // Let ALL text-input widgets handle their own keys
+        if (qobject_cast<QLineEdit*>(obj) || qobject_cast<QTextEdit*>(obj) || qobject_cast<QPlainTextEdit*>(obj) ||
+            qobject_cast<QSpinBox*>(obj) || qobject_cast<QDoubleSpinBox*>(obj) || qobject_cast<QComboBox*>(obj) ||
+            qobject_cast<QDateEdit*>(obj)) {
             return QWidget::eventFilter(obj, event);
         }
 
         QString ch = ke->text();
 
         if (ke->key() == Qt::Key_Return || ke->key() == Qt::Key_Enter) {
-            // Only act if we actually accumulated something
             if (!m_barcodeBuffer.isEmpty()) {
                 m_barcodeEdit->setText(m_barcodeBuffer);
                 m_barcodeBuffer.clear();
@@ -238,7 +247,6 @@ bool POSWidget::eventFilter(QObject* obj, QEvent* event) {
                 onBarcodeEntered();
                 return true;
             }
-            // Don't consume Enter if buffer is empty — let other widgets handle it
             return false;
         }
 

@@ -561,7 +561,7 @@ bool Database::rollbackTransaction() { return m_db.rollback(); }
 void Database::updateStockBalance(int productId, int openingQty, int qtyIn, int qtyOut, int qtyReversal) {
     QString today = QDate::currentDate().toString(Qt::ISODate);
 
-    // Ensure a row exists for today with correct opening quantity
+    // Only sets opening_quantity on first insert of the day; DO NOTHING on conflict
     QSqlQuery ins(m_db);
     ins.prepare(R"(
         INSERT INTO stock_balances 
@@ -574,22 +574,22 @@ void Database::updateStockBalance(int productId, int openingQty, int qtyIn, int 
     ins.addBindValue(today);
     ins.exec();
 
-    // Now increment the appropriate column
-    if (qtyIn > 0 || qtyOut > 0 || qtyReversal > 0) {
-        QSqlQuery upd(m_db);
-        upd.prepare(R"(
-            UPDATE stock_balances 
-            SET quantity_in = quantity_in + ?,
-                quantity_out = quantity_out + ?,
-                quantity_reversal = quantity_reversal + ?
-            WHERE product_id = ? AND balance_date = ?
-        )");
-        upd.addBindValue(qtyIn);
-        upd.addBindValue(qtyOut);
-        upd.addBindValue(qtyReversal);
-        upd.addBindValue(productId);
-        upd.addBindValue(today);
-        upd.exec();
+    // Always accumulate movements for the day
+    QSqlQuery upd(m_db);
+    upd.prepare(R"(
+        UPDATE stock_balances 
+        SET quantity_in       = quantity_in + ?,
+            quantity_out      = quantity_out + ?,
+            quantity_reversal = quantity_reversal + ?
+        WHERE product_id = ? AND balance_date = ?
+    )");
+    upd.addBindValue(qtyIn);
+    upd.addBindValue(qtyOut);
+    upd.addBindValue(qtyReversal);
+    upd.addBindValue(productId);
+    upd.addBindValue(today);
+    if (!upd.exec()) {
+        qWarning() << "updateStockBalance UPDATE failed:" << upd.lastError().text();
     }
 }
 

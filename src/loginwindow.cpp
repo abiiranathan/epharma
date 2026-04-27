@@ -4,6 +4,7 @@
 #include <QFormLayout>
 #include <QHBoxLayout>
 #include <QScreen>
+#include <QShortcut>
 #include <QVBoxLayout>
 #include "database.hpp"
 
@@ -66,7 +67,6 @@ void LoginWindow::setupUi() {
     m_usernameEdit = new QLineEdit;
     m_usernameEdit->setPlaceholderText("Enter your username");
     m_usernameEdit->setObjectName("searchBar");
-    m_usernameEdit->setText("nabiizy");  // For easier testing, pre-fill with default username
 
     // Password
     auto* passLabel = new QLabel("Password");
@@ -75,7 +75,6 @@ void LoginWindow::setupUi() {
     m_passwordEdit->setEchoMode(QLineEdit::Password);
     m_passwordEdit->setPlaceholderText("Enter your password");
     m_passwordEdit->setObjectName("searchBar");
-    m_passwordEdit->setText("22anjohn");  // For easier testing, pre-fill with default password
 
     cardLayout->addWidget(userLabel);
     cardLayout->addWidget(m_usernameEdit);
@@ -89,10 +88,17 @@ void LoginWindow::setupUi() {
     cardLayout->addWidget(m_loginBtn);
 
     auto* hint = new QLabel("Default: admin / admin123");
-    hint->setStyleSheet("color: #a0aec0; font-size: 11px;");
+    hint->setStyleSheet("color: #38557c; font-size: 11px;");
+    hint->setVisible(false);
+
+    // enable if user presses Ctrl+H on the login screen
     hint->setAlignment(Qt::AlignCenter);
     cardLayout->addWidget(hint);
     cardLayout->addStretch();
+
+    // Ctrl+H to toggle hint visibility
+    auto* hintShortcut = new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_H), this);
+    connect(hintShortcut, &QShortcut::activated, this, [hint] { hint->setVisible(!hint->isVisible()); });
 
     root->addWidget(card);
 
