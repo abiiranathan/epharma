@@ -638,8 +638,9 @@ void StockCardTab::setupUi() {
     root->addLayout(ctrlRow);
 
     m_table = new QTableWidget;
-    m_table->setColumnCount(8);
-    m_table->setHorizontalHeaderLabels({"Date", "Product", "Brand", "Opening", "In", "Out", "Closing", "Status"});
+    m_table->setColumnCount(9);
+    m_table->setHorizontalHeaderLabels(
+        {"Date", "Product", "Brand", "Opening", "In", "Out", "Reversal", "Closing", "Status"});
     m_table->setEditTriggers(QAbstractItemView::NoEditTriggers);
     m_table->setAlternatingRowColors(true);
     m_table->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
@@ -648,8 +649,9 @@ void StockCardTab::setupUi() {
     m_table->setColumnWidth(3, 70);
     m_table->setColumnWidth(4, 60);
     m_table->setColumnWidth(5, 60);
-    m_table->setColumnWidth(6, 70);
-    m_table->setColumnWidth(7, 80);
+    m_table->setColumnWidth(6, 70);  // Reversal
+    m_table->setColumnWidth(7, 70);  // Closing
+    m_table->setColumnWidth(8, 80);  // Status
     m_table->verticalHeader()->setVisible(false);
     m_table->setShowGrid(false);
     root->addWidget(m_table);
@@ -684,13 +686,16 @@ void StockCardTab::onGenerate() {
 
         m_table->setItem(i, 5, center(sc.quantityOut, "#e53e3e"));
 
+        auto* revItem = center(sc.quantityReversal, sc.quantityReversal > 0 ? "#2b6cb0" : "");
+        m_table->setItem(i, 6, revItem);
+
         auto* closItem = center(sc.closingQuantity);
         if (sc.closingQuantity == 0) {
             closItem->setForeground(QColor("#e53e3e"));
         } else if (sc.closingQuantity < 10) {
             closItem->setForeground(QColor("#d97706"));
         }
-        m_table->setItem(i, 6, closItem);
+        m_table->setItem(i, 7, closItem);
 
         QString status;
         if (sc.closingQuantity == 0) {
@@ -703,7 +708,7 @@ void StockCardTab::onGenerate() {
 
         auto* statusItem = new QTableWidgetItem(status);
         statusItem->setTextAlignment(Qt::AlignCenter);
-        m_table->setItem(i, 7, statusItem);
+        m_table->setItem(i, 8, statusItem);
     }
 }
 

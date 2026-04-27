@@ -161,6 +161,8 @@ bool Database::initSchema() {
             product_id INTEGER NOT NULL,
             opening_quantity INTEGER NOT NULL DEFAULT 0,
             quantity_in INTEGER NOT NULL DEFAULT 0,
+            quantity_out INTEGER NOT NULL DEFAULT 0,
+            quantity_reversal INTEGER NOT NULL DEFAULT 0,
             balance_date TEXT NOT NULL DEFAULT (date('now')),
             FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
             UNIQUE(product_id, balance_date)
@@ -421,7 +423,7 @@ bool Database::createProduct(const Product& p) {
     int newId = q.lastInsertId().toInt();
     updateProductExpiry(newId, p.expiryDates);
     // initialize stock balance
-    updateStockBalance(newId, 0, p.quantity);
+    updateStockBalance(newId, p.quantity, 0, 0, 0);
     return true;
 }
 
@@ -441,7 +443,9 @@ bool Database::updateProduct(const Product& p) {
         m_lastError = q.lastError().text();
         return false;
     }
+
     updateProductExpiry(p.id, p.expiryDates);
+    updateStockBalance(p.id, p.quantity, 0, 0, 0);
     return true;
 }
 
@@ -554,31 +558,38 @@ bool Database::commitTransaction() { return m_db.commit(); }
 
 bool Database::rollbackTransaction() { return m_db.rollback(); }
 
-void Database::updateStockBalance(int productId, int openingQty, int qtyIn) {
+void Database::updateStockBalance(int productId, int openingQty, int qtyIn, int qtyOut, int qtyReversal) {
     QString today = QDate::currentDate().toString(Qt::ISODate);
-    QSqlQuery q(m_db);
-    q.prepare("SELECT id FROM stock_balances WHERE product_id=? AND balance_date=?");
-    q.addBindValue(productId);
-    q.addBindValue(today);
-    q.exec();
-    if (q.next()) {
-        // Update quantity_in
+
+    // Ensure a row exists for today with correct opening quantity
+    QSqlQuery ins(m_db);
+    ins.prepare(R"(
+        INSERT INTO stock_balances 
+            (product_id, opening_quantity, quantity_in, quantity_out, quantity_reversal, balance_date)
+        VALUES (?, ?, 0, 0, 0, ?)
+        ON CONFLICT(product_id, balance_date) DO NOTHING
+    )");
+    ins.addBindValue(productId);
+    ins.addBindValue(openingQty);
+    ins.addBindValue(today);
+    ins.exec();
+
+    // Now increment the appropriate column
+    if (qtyIn > 0 || qtyOut > 0 || qtyReversal > 0) {
         QSqlQuery upd(m_db);
-        upd.prepare("UPDATE stock_balances SET quantity_in=quantity_in+? WHERE product_id=? AND balance_date=?");
+        upd.prepare(R"(
+            UPDATE stock_balances 
+            SET quantity_in = quantity_in + ?,
+                quantity_out = quantity_out + ?,
+                quantity_reversal = quantity_reversal + ?
+            WHERE product_id = ? AND balance_date = ?
+        )");
         upd.addBindValue(qtyIn);
+        upd.addBindValue(qtyOut);
+        upd.addBindValue(qtyReversal);
         upd.addBindValue(productId);
         upd.addBindValue(today);
         upd.exec();
-    } else {
-        QSqlQuery ins(m_db);
-        ins.prepare(
-            "INSERT OR IGNORE INTO stock_balances (product_id, opening_quantity, quantity_in, balance_date) VALUES "
-            "(?,?,?,?)");
-        ins.addBindValue(productId);
-        ins.addBindValue(openingQty);
-        ins.addBindValue(qtyIn);
-        ins.addBindValue(today);
-        ins.exec();
     }
 }
 
@@ -618,7 +629,7 @@ bool Database::createTransaction(const Transaction& t) {
             return false;
         }
 
-        // Update stock balance before decrement (record opening)
+        // Ensure today's balance row exists with correct opening
         QString today = QDate::currentDate().toString(Qt::ISODate);
         QSqlQuery check(m_db);
         check.prepare("SELECT id FROM stock_balances WHERE product_id=? AND balance_date=?");
@@ -626,7 +637,7 @@ bool Database::createTransaction(const Transaction& t) {
         check.addBindValue(today);
         check.exec();
         if (!check.next()) {
-            updateStockBalance(item.productId, p.quantity, 0);
+            updateStockBalance(item.productId, p.quantity, 0, 0, 0);
         }
 
         QSqlQuery upd(m_db);
@@ -638,6 +649,9 @@ bool Database::createTransaction(const Transaction& t) {
             rollbackTransaction();
             return false;
         }
+
+        // Record stock out
+        updateStockBalance(item.productId, p.quantity, 0, item.quantity, 0);
     }
 
     QSqlQuery q(m_db);
@@ -673,6 +687,10 @@ bool Database::deleteTransaction(int id) {
             rollbackTransaction();
             return false;
         }
+
+        // Record reversal
+        Product p = getProductById(item.productId);
+        updateStockBalance(item.productId, p.quantity, 0, 0, item.quantity);
     }
 
     QSqlQuery del(m_db);
@@ -882,7 +900,7 @@ bool Database::addStockIn(const StockInItem& item) {
     }
 
     // Update stock balance
-    updateStockBalance(item.productId, p.quantity, item.quantity);
+    updateStockBalance(item.productId, p.quantity, item.quantity, 0, 0);
 
     return commitTransaction();
 }
@@ -1163,24 +1181,22 @@ QList<ProductSale> Database::getAnnualProductSales(int year) {
 QList<StockCard> Database::getStockCard(const QDate& fromDate, const QDate& toDate) {
     QList<StockCard> list;
     QString sql = R"(
-        SELECT
-            sb.balance_date,
-            p.id AS product_id,
-            p.generic_name,
-            p.brand_name,
-            sb.opening_quantity,
-            sb.quantity_in,
-            COALESCE((
-                SELECT SUM(CAST(json_extract(item.value, '$.quantity') AS INTEGER))
-                FROM transactions t, json_each(t.items) AS item
-                WHERE date(t.created_at) = sb.balance_date
-                  AND CAST(json_extract(item.value, '$.id') AS INTEGER) = p.id
-            ), 0) AS quantity_out
-        FROM stock_balances sb
-        JOIN products p ON sb.product_id = p.id
-        WHERE sb.balance_date BETWEEN ? AND ?
-        ORDER BY sb.balance_date DESC, p.generic_name
-    )";
+            SELECT
+                sb.balance_date,
+                p.id AS product_id,
+                p.generic_name,
+                p.brand_name,
+                sb.opening_quantity,
+                sb.quantity_in,
+                sb.quantity_out,
+                sb.quantity_reversal,
+                (sb.opening_quantity + sb.quantity_in - sb.quantity_out + sb.quantity_reversal) AS closing
+            FROM stock_balances sb
+            JOIN products p ON sb.product_id = p.id
+            WHERE sb.balance_date BETWEEN ? AND ?
+            ORDER BY sb.balance_date DESC, p.generic_name
+        )";
+
     QSqlQuery q(m_db);
     q.prepare(sql);
     q.addBindValue(fromDate.toString(Qt::ISODate));
@@ -1189,6 +1205,7 @@ QList<StockCard> Database::getStockCard(const QDate& fromDate, const QDate& toDa
         m_lastError = q.lastError().text();
         return list;
     }
+
     while (q.next()) {
         StockCard sc;
         sc.date = QDate::fromString(q.value(0).toString(), Qt::ISODate);
@@ -1198,7 +1215,8 @@ QList<StockCard> Database::getStockCard(const QDate& fromDate, const QDate& toDa
         sc.openingQuantity = q.value(4).toInt();
         sc.quantityIn = q.value(5).toInt();
         sc.quantityOut = q.value(6).toInt();
-        sc.closingQuantity = sc.openingQuantity + sc.quantityIn - sc.quantityOut;
+        sc.quantityReversal = q.value(7).toInt();
+        sc.closingQuantity = q.value(8).toInt();
         list.append(sc);
     }
     return list;

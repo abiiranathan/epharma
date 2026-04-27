@@ -48,8 +48,8 @@ struct TransactionItem {
     double costPrice = 0.0;
     QString barcode;
 
-    double subtotal() const { return quantity * sellingPrice; }
-    QJsonObject toJson() const;
+    [[nodiscard]] double subtotal() const { return quantity * sellingPrice; }
+    [[nodiscard]] QJsonObject toJson() const;
     static TransactionItem fromJson(const QJsonObject& obj);
 };
 
@@ -99,6 +99,8 @@ struct StockBalance {
     int productId = 0;
     int openingQuantity = 0;
     int quantityIn = 0;
+    int quantityOut = 0;
+    int quantityReversal = 0;
     QDateTime createdAt;
 };
 
@@ -110,6 +112,7 @@ struct StockCard {
     int openingQuantity = 0;
     int quantityIn = 0;
     int quantityOut = 0;
+    int quantityReversal = 0;
     int closingQuantity = 0;
 };
 

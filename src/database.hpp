@@ -105,5 +105,5 @@ class Database {
     bool removeProductExpiry(int productId, const QDate& date);
     QList<QDate> getProductExpiry(int productId);
 
-    void updateStockBalance(int productId, int openingQty, int qtyIn);
+    void updateStockBalance(int productId, int openingQty, int qtyIn, int qtyOut = 0, int qtyReversal = 0);
 };
