@@ -18,8 +18,6 @@ A desktop point-of-sale system built with **C++ / Qt 6** and **SQLite**. Designe
   - Stock card — daily opening, in, out, reversal, and closing balances
 - **User Management** — multi-user with admin/pharmacist roles, activation/deactivation
 
-## Screenshots
-
 
 ## Requirements
 

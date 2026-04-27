@@ -1,0 +1,124 @@
+name: Qt6 Linux Build and Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: "6.7.0"
+          host: "linux"
+          target: "desktop"
+          arch: "linux_gcc_64"
+          cache: true
+          modules: "qtcharts"
+
+      - name: Get Version from CMake
+        id: version
+        run: |
+          version=$(grep -oP 'project\s*\(\s*tella\s+VERSION\s+\K\d+\.\d+\.\d+' CMakeLists.txt)
+          if [ -z "$version" ]; then
+            echo "Failed to extract version from CMakeLists.txt"
+            exit 1
+          fi
+          echo "Detected version: $version"
+          echo "version=$version" >> $GITHUB_OUTPUT
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            cmake \
+            ninja-build \
+            libgl1-mesa-dev \
+            libfontconfig1-dev \
+            libfreetype6-dev \
+            libx11-dev \
+            libxext-dev \
+            libxfixes-dev \
+            libxi-dev \
+            libxrender-dev \
+            libxcb1-dev \
+            libx11-xcb-dev \
+            libxcb-glx0-dev \
+            libxcb-keysyms1-dev \
+            libxcb-image0-dev \
+            libxcb-shm0-dev \
+            libxcb-icccm4-dev \
+            libxcb-sync-dev \
+            libxcb-xfixes0-dev \
+            libxcb-shape0-dev \
+            libxcb-cursor-dev \
+            libxcb-randr0-dev \
+            libxcb-render-util0-dev \
+            libxkbcommon-dev \
+            libxkbcommon-x11-dev \
+            libfuse2
+
+      - name: Configure CMake
+        run: |
+          cmake -B build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_CXX_STANDARD=17 \
+            -DCMAKE_PREFIX_PATH="$Qt6_DIR"
+
+      - name: Build Project
+        run: |
+          cmake --build build --config Release --parallel
+
+      - name: Create Deployment Directory
+        run: |
+          mkdir -p build/release/deploy
+
+      - name: Copy Executable and Resources
+        run: |
+          cp build/tella build/release/
+          cp tella.desktop build/release/ || true
+          cp icons/favicon.ico build/release/ || true
+          cp images/logo.png build/release/tella.png || true
+
+      - name: Deploy Application (linuxdeployqt)
+        run: |
+          wget -q https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage
+          chmod +x linuxdeployqt-continuous-x86_64.AppImage
+
+          ./linuxdeployqt-continuous-x86_64.AppImage \
+            build/release/tella \
+            -bundle-non-qt-libs \
+            -qmake="$Qt6_DIR/bin/qmake" \
+            -appimage \
+            -extra-plugins=iconengines,platformthemes \
+            -no-translations \
+            -exclude-libs=libqsqlmimer
+
+          mv tella*.AppImage build/release/deploy/tella_${{ steps.version.outputs.version }}_Linux_x64.AppImage
+
+      - name: Create Tarball
+        run: |
+          cd build/release/deploy
+          tar -czf tella_${{ steps.version.outputs.version }}_Linux_x64.tar.gz \
+            tella_${{ steps.version.outputs.version }}_Linux_x64.AppImage
+
+      - name: Create Release and Upload Assets
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: Tella POS v${{ steps.version.outputs.version }}
+          body: "Linux x64 AppImage for Tella POS v${{ steps.version.outputs.version }}"
+          files: |
+            build/release/deploy/tella_${{ steps.version.outputs.version }}_Linux_x64.tar.gz
+          draft: false
+          prerelease: false

@@ -79,6 +79,11 @@ void MainWindow::setupUi() {
 
     sideLayout->addStretch();
 
+    auto* logo = new QLabel;
+    logo->setPixmap(QPixmap(":/images/logo.png").scaled(240, 200, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    logo->setAlignment(Qt::AlignCenter);
+    sideLayout->addWidget(logo);
+
     // User info at bottom
     auto* userWidget = new QWidget;
     userWidget->setStyleSheet("background-color: #152d4a; border-top: 1px solid #2d5a8e;");
@@ -118,7 +123,8 @@ void MainWindow::setupUi() {
     m_stack->addWidget(m_invoicesWidget);      // 2
     m_stack->addWidget(m_transactionsWidget);  // 3
     m_stack->addWidget(m_reportsWidget);       // 4
-    m_stack->addWidget(m_usersWidget);         // 5
+
+    m_stack->addWidget(m_usersWidget);  // 5
 
     mainLayout->addWidget(m_stack);
 

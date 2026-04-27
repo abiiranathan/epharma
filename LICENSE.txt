@@ -1,0 +1,44 @@
+Copyright (c) 2024 Dr. Abiira Nathan
+
+All rights reserved.
+
+This software and associated documentation files (the "Software") are the
+proprietary property of Dr. Abiira Nathan.
+
+Permission is granted to use the Software solely under the terms and
+conditions of a valid commercial license agreement obtained from the
+copyright holder.
+
+1. GRANT OF LICENSE
+   Subject to payment of applicable fees and compliance with this Agreement,
+   the Licensor grants the Licensee a non-exclusive, non-transferable,
+   non-sublicensable license to install and use the Software for internal
+   business purposes.
+
+2. RESTRICTIONS
+   The Licensee shall NOT:
+   - Copy, modify, or create derivative works of the Software
+   - Distribute, sublicense, lease, rent, or sell the Software
+   - Reverse engineer, decompile, or disassemble the Software
+   - Remove or alter any proprietary notices or labels
+
+3. OWNERSHIP
+   The Software is licensed, not sold. All rights, title, and interest in
+   and to the Software remain with the Licensor.
+
+4. TERMINATION
+   This license is effective until terminated. It will terminate automatically
+   if the Licensee fails to comply with any term of this Agreement.
+
+5. NO WARRANTY
+   THE SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING BUT NOT LIMITED TO MERCHANTABILITY, FITNESS FOR A
+   PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
+
+6. LIMITATION OF LIABILITY
+   IN NO EVENT SHALL THE LICENSOR BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER
+   LIABILITY ARISING FROM THE USE OF THE SOFTWARE.
+
+7. GOVERNING LAW
+   This Agreement shall be governed by and construed in accordance with the
+   laws of Uganda.

@@ -1,0 +1,110 @@
+name: Qt6 Windows Build and Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Get Version from CMake
+        id: version
+        run: |
+          $version = (Select-String -Path CMakeLists.txt -Pattern 'project\s*\(\s*tella\s+VERSION\s+(\d+\.\d+\.\d+)' | % { $_.Matches.Groups[1].Value })
+          if (-not $version) {
+            Write-Error "Failed to extract version from CMakeLists.txt"
+            exit 1
+          }
+          Write-Host "Detected version: $version"
+          echo "version=$version" >> $env:GITHUB_OUTPUT
+        shell: pwsh
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: "6.7.0"
+          host: "windows"
+          target: "desktop"
+          cache: true
+          modules: "qtcharts"
+
+      - name: Setup MSVC Environment
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Install NSIS
+        run: |
+          choco install nsis --version=3.11 -y
+        shell: pwsh
+
+      - name: Configure CMake
+        run: |
+          cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=17 -DCMAKE_PREFIX_PATH="$env:Qt6_DIR" -LA
+        shell: pwsh
+
+      - name: Build Project
+        run: |
+          cmake --build build --config Release --parallel
+        shell: pwsh
+
+      - name: Create Deployment Directory
+        run: |
+          New-Item -Path build/release/deploy -ItemType Directory -Force
+        shell: pwsh
+
+      - name: Deploy Application (windeployqt)
+        run: |
+          $env:PATH += ";$env:Qt6_DIR\bin"
+          if (-not (Test-Path build/Release/tella.exe)) {
+            Write-Error "tella.exe not found"
+            exit 1
+          }
+          windeployqt --dir build/release/deploy --release --compiler-runtime build/Release/tella.exe
+        shell: pwsh
+
+      - name: Copy Executable to Deployment Directory
+        run: |
+          Copy-Item -Path build/Release/tella.exe -Destination build/release/deploy/
+        shell: pwsh
+
+      - name: Create Installer with NSIS
+        run: |
+          Copy-Item -Path installer.nsi -Destination build/release/deploy/
+          Copy-Item -Path icons/favicon.ico -Destination build/release/deploy/
+          Copy-Item -Path images/tella_installer.bmp -Destination build/release/deploy/
+          Copy-Item -Path images/tella_finish_page.bmp -Destination build/release/deploy/
+
+          $licenseExists = Test-Path LICENSE.txt
+          if ($licenseExists) {
+            Copy-Item -Path LICENSE.txt -Destination build/release/deploy/
+          }
+          Set-Location build/release/deploy
+          makensis /DVERSION=${{ steps.version.outputs.version }} $(if ($licenseExists) { "/DEXIST_LICENSE" }) installer.nsi
+          if (-not (Test-Path tella_Installer.exe)) {
+            Write-Error "NSIS installer creation failed"
+            exit 1
+          }
+          Move-Item -Path tella_Installer.exe -Destination tella_${{ steps.version.outputs.version }}_Windows_x64.exe
+        shell: pwsh
+
+      - name: Create Release and Upload Assets
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: Tella POS v${{ steps.version.outputs.version }}
+          body: "Windows Installer for Tella POS v${{ steps.version.outputs.version }}"
+          files: |
+            build/release/deploy/tella_${{ steps.version.outputs.version }}_Windows_x64.exe
+          draft: false
+          prerelease: false

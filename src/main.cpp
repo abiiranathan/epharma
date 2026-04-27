@@ -14,6 +14,8 @@ int main(int argc, char* argv[]) {
     app.setApplicationName("Tella POS");
     app.setApplicationVersion("1.0.0");
     app.setOrganizationName("Tella POS");
+    // logo
+    app.setWindowIcon(QIcon(":/images/logo.png"));
 
     // Load stylesheet from resources
     QFile styleFile(":/style.qss");

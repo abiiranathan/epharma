@@ -29,7 +29,7 @@ qt_add_executable(tella
     src/reportswidget.cpp
     src/userswidget.cpp
     src/models.cpp
-    resources/resources.qrc
+    resources.qrc
 )
 
 target_include_directories(tella PRIVATE src)
